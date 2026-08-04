@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>เช็คสตอคอะไหล่</title>
+<style>
+  :root{
+    --bg:#eef1f4;
+    --panel:#ffffff;
+    --ink:#1c2430;
+    --sub:#5b6675;
+    --line:#dde2e8;
+    --steel:#3b4a5e;
+    --steel-dark:#28323f;
+    --amber:#c8791f;
+    --green:#2f7d4f;
+    --red:#c23b3b;
+    --mono: 'IBM Plex Mono', 'Consolas', monospace;
+    --sans: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:
+      radial-gradient(circle at 1px 1px, #d7dce2 1px, transparent 0) 0 0/22px 22px,
+      var(--bg);
+    color:var(--ink);
+    padding:22px 16px 60px;
+  }
+  .demo-tag{
+    max-width:960px;
+    margin:0 auto 18px auto;
+    background:var(--steel-dark);
+    color:#e7ebf0;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.06em;
+    padding:8px 14px;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .demo-tag b{ color:#ffb454; }
+
+  header.top{
+    max-width:960px;
+    margin:0 auto 18px auto;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    color:var(--sub);
+    text-transform:uppercase;
+  }
+  h1{
+    font-size:26px;
+    margin:4px 0 2px 0;
+    letter-spacing:-0.01em;
+  }
+  .sub-line{ color:var(--sub); font-size:13px; }
+
+  .toolbar{
+    max-width:960px;
+    margin:0 auto 14px auto;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  #searchBox{
+    flex:1;
+    min-width:200px;
+    padding:10px 14px;
+    font-size:14px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--panel);
+    font-family:var(--sans);
+  }
+  #searchBox:focus{ outline:2px solid var(--steel); outline-offset:1px; }
+
+  .cat-bar{ display:flex; gap:6px; flex-wrap:wrap; }
+  .cat-chip{
+    padding:8px 14px;
+    border-radius:7px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    font-size:12.5px;
+    font-family:var(--mono);
+    cursor:pointer;
+    color:var(--steel);
+  }
+  .cat-chip.active{ background:var(--steel-dark); border-color:var(--steel-dark); color:#fff; }
+  .cat-chip:focus-visible{ outline:2px solid var(--steel); outline-offset:1px; }
+  .cat-chip.cat-add{
+    border-style:dashed;
+    color:var(--steel);
+    font-weight:700;
+  }
+  .cat-chip .cat-edit-icon{
+    display:inline-block;
+    margin-left:6px;
+    opacity:.55;
+    font-size:11px;
+  }
+  .cat-chip .cat-edit-icon:hover{ opacity:1; }
+  .cat-chip-input{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    padding:5px 7px;
+    border-radius:7px;
+    background:var(--panel);
+    border:1px solid var(--steel);
+  }
+  .cat-chip-input input{
+    border:none;
+    outline:none;
+    font-size:12.5px;
+    font-family:var(--sans);
+    width:120px;
+    padding:2px;
+  }
+  .cat-chip-input span{
+    cursor:pointer;
+    font-weight:700;
+    font-size:14px;
+    padding:0 3px;
+    color:var(--steel);
+  }
+  .cat-chip-input span.cancel{ color:var(--red); }
+
+  .card.add-card{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:200px;
+    border:2px dashed var(--line);
+    border-left:2px dashed var(--line);
+    background:transparent;
+    color:var(--steel);
+    text-align:center;
+  }
+  .card.add-card:hover{ border-color:var(--steel); }
+  .add-card .ac-inner{ padding:14px; }
+  .add-card .ac-plus{ font-size:26px; font-weight:700; line-height:1; }
+  .add-card .ac-label{ font-size:13px; font-weight:600; margin-top:4px; }
+
+  .grid{
+    max-width:960px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(225px,1fr));
+    gap:14px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+    border-left:3px solid var(--line);
+  }
+  .card:hover{ transform:translateY(-2px); box-shadow:0 6px 16px rgba(28,36,48,0.08); }
+  .card:focus-visible{ outline:2px solid var(--steel); outline-offset:2px; }
+  .card.low{ border-left-color:var(--red); }
+  .card.ok{ border-left-color:var(--green); }
+
+  .thumb{
+    height:118px;
+    background:
+      linear-gradient(135deg, #f4f6f8 25%, transparent 25%) -10px 0/20px 20px,
+      linear-gradient(225deg, #f4f6f8 25%, transparent 25%) -10px 0/20px 20px,
+      #e7ebef;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .thumb svg{ width:46px; height:46px; opacity:.55; }
+
+  .body{ padding:12px 14px 14px; }
+  .cat-label{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--amber);
+    font-weight:600;
+  }
+  .p-name{ font-weight:700; font-size:14.5px; margin-top:3px; line-height:1.25; }
+  .p-code{ font-family:var(--mono); font-size:11px; color:var(--sub); margin:2px 0 9px; }
+
+  .stat-line{ display:flex; justify-content:space-between; font-size:12.5px; margin-top:3px; }
+  .stat-line span:first-child{ color:var(--sub); }
+  .qty{ font-weight:700; font-family:var(--mono); }
+  .qty.low{ color:var(--red); }
+
+  .badge{
+    display:inline-block;
+    margin-top:9px;
+    padding:3px 9px;
+    border-radius:5px;
+    font-size:11px;
+    font-family:var(--mono);
+    font-weight:600;
+  }
+  .badge.none{ background:#eef0f2; color:#697180; }
+  .badge.pr{ background:#fbeed9; color:#8a5a12; }
+  .badge.po{ background:#dde7f7; color:#2d4f8f; }
+  .badge.arrived{ background:#dcefe0; color:#20613c; }
+
+  .upd{ font-size:10.5px; color:#98a1ac; margin-top:8px; }
+
+  /* modal */
+  .overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,26,34,.5);
+    align-items:center; justify-content:center; padding:16px; z-index:20;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:var(--panel); border-radius:12px; padding:20px;
+    width:100%; max-width:380px; max-height:90vh; overflow-y:auto;
+  }
+  .modal-thumb{
+    height:130px; border-radius:8px; background:#e7ebef;
+    display:flex; align-items:center; justify-content:center; margin-bottom:12px;
+  }
+  .modal-thumb svg{ width:50px; height:50px; opacity:.55; }
+  .modal h2{ font-size:16px; margin:0 0 2px; }
+  .modal .msub{ font-family:var(--mono); font-size:11px; color:var(--sub); margin-bottom:10px; }
+  .modal label{ display:block; font-size:12.5px; font-weight:600; margin:12px 0 5px; }
+  .modal select, .modal input{
+    width:100%; padding:9px 10px; font-size:14.5px;
+    border:1px solid var(--line); border-radius:7px; font-family:var(--sans);
+  }
+  .mbtns{ display:flex; gap:8px; margin-top:18px; }
+  .mbtns button{ flex:1; padding:11px; font-size:14.5px; font-weight:600; border:none; border-radius:7px; cursor:pointer; }
+  .b-cancel{ background:#eef0f2; color:#333; }
+  .b-save{ background:var(--steel-dark); color:#fff; }
+  .b-save:disabled{ opacity:.5; }
+  #modalMsg{ font-size:12.5px; margin-top:8px; text-align:center; }
+  #modalMsg.err{ color:var(--red); }
+  #modalMsg.ok{ color:var(--green); }
+
+  /* mode toggle (ตั้งยอด vs เบิก) */
+  .mode-toggle{
+    display:flex;
+    gap:6px;
+    margin-top:16px;
+    padding-top:12px;
+    border-top:1px solid #eee;
+  }
+  .mode-btn{
+    flex:1;
+    padding:9px 6px;
+    border-radius:7px;
+    border:1px solid var(--line);
+    background:#f7f8fa;
+    color:var(--sub);
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    text-align:center;
+  }
+  .mode-btn.active.set{ background:var(--steel-dark); border-color:var(--steel-dark); color:#fff; }
+  .mode-btn.active.withdraw{ background:var(--red); border-color:var(--red); color:#fff; }
+
+  .withdraw-preview{
+    margin-top:8px;
+    font-size:12.5px;
+    background:#fbeeee;
+    color:#8a2f2f;
+    border-radius:6px;
+    padding:8px 10px;
+    display:none;
+  }
+  .withdraw-preview.show{ display:block; }
+  .withdraw-preview b{ font-family:var(--mono); }
+  .withdraw-preview.warn{ background:#fde8e8; color:var(--red); font-weight:700; }
+
+  .code-row{
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    flex-wrap:wrap;
+  }
+  .code-row .code-input-col{ flex:1; min-width:120px; }
+  .barcode-box{
+    flex:1;
+    min-width:130px;
+    min-height:54px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:7px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:4px;
+  }
+  .barcode-box svg{ max-width:100%; height:auto; }
+  .barcode-box .bc-empty{ font-size:11px; color:#b7bdc6; font-family:var(--mono); }
+
+  .room-tabs{
+    max-width:960px;
+    margin:0 auto 14px auto;
+    display:flex;
+    gap:10px;
+  }
+  .room-tab{
+    flex:1;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 16px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .room-tab .rt-name{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:15px;
+    color:var(--ink);
+  }
+  .room-tab .rt-meta{
+    font-size:11.5px;
+    color:var(--sub);
+    margin-top:3px;
+  }
+  .room-tab.active{
+    background:var(--steel-dark);
+    border-color:var(--steel-dark);
+  }
+  .room-tab.active .rt-name{ color:#fff; }
+  .room-tab.active .rt-meta{ color:#c7cdd6; }
+  .room-tab:focus-visible{ outline:2px solid var(--steel); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+  <div class="overlay show" id="loginOverlay">
+    <div class="modal" style="max-width:340px;">
+      <h2 style="margin-bottom:2px;">เข้าสู่ระบบ</h2>
+      <div class="msub">คลังอะไหล่ · เช็คสตอค</div>
+      <label>ชื่อผู้ใช้</label>
+      <input type="text" id="loginUsername" autocomplete="username">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <div id="loginMsg" style="margin-top:8px;font-size:13px;"></div>
+      <div class="mbtns">
+        <button class="b-save" style="flex:1;" onclick="doLogin()">เข้าสู่ระบบ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="adminOverlay">
+    <div class="modal" style="max-width:420px;">
+      <h2>จัดการผู้ใช้</h2>
+      <div class="msub">เพิ่มบัญชีผู้ใช้ใหม่ (เฉพาะผู้ดูแลระบบ)</div>
+      <label>ชื่อผู้ใช้ใหม่ (สำหรับล็อกอิน)</label>
+      <input type="text" id="newUserUsername">
+      <label>ชื่อที่แสดง</label>
+      <input type="text" id="newUserDisplayName">
+      <label>รหัสผ่าน</label>
+      <input type="text" id="newUserPassword">
+      <label>สิทธิ์</label>
+      <select id="newUserRole">
+        <option value="user">ผู้ใช้งานทั่วไป</option>
+        <option value="admin">ผู้ดูแลระบบ</option>
+      </select>
+      <div id="adminMsg" style="font-size:12.5px;margin-top:8px;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeAdminPanel()">ปิด</button>
+        <button class="b-save" onclick="createNewUser()">เพิ่มผู้ใช้</button>
+      </div>
+      <div id="userListWrap" style="margin-top:16px;font-size:12.5px;color:var(--sub);line-height:1.7;"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="reportOverlay">
+    <div class="modal" style="max-width:640px;">
+      <h2>รายงานการแก้ไข</h2>
+      <div class="msub">สรุปว่าใครแก้ไขอะไรบ้าง</div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label>ช่วงเวลา</label>
+          <select id="reportPeriod" onchange="onReportPeriodChange()">
+            <option value="day">รายวัน</option>
+            <option value="month">รายเดือน</option>
+            <option value="year">รายปี</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label id="reportDateLabel">วันที่</label>
+          <input type="date" id="reportDateDay">
+          <input type="month" id="reportDateMonth" style="display:none;">
+          <input type="number" id="reportDateYear" style="display:none;" min="2020" max="2100">
+        </div>
+      </div>
+      <div class="mbtns" style="margin-top:14px;">
+        <button class="b-save" style="flex:1;" onclick="runReport()">ดูรายงาน</button>
+        <button class="b-cancel" style="flex:1;" onclick="exportReportCSV()">⬇️ ส่งออก CSV</button>
+      </div>
+      <div id="reportSummary" style="font-size:13px;margin-top:12px;line-height:1.7;"></div>
+      <div id="reportList" style="max-height:320px;overflow-y:auto;margin-top:8px;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeReportModal()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-tag">
+    <span><b>บันทึกจริง</b> — ข้อมูลถูกเก็บไว้บน Supabase ทุกเครื่องที่เปิดไฟล์นี้เห็นข้อมูลชุดเดียวกัน</span>
+    <span id="syncStatus">กำลังโหลด...</span>
+  </div>
+
+  <div style="max-width:960px;margin:10px auto 0 auto;display:flex;justify-content:flex-end;gap:8px;align-items:center;font-size:13px;padding:0 20px;flex-wrap:wrap;">
+    <span id="userGreeting" style="color:var(--sub);"></span>
+    <button onclick="openReportModal()" style="padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12.5px;">📊 รายงาน</button>
+    <button id="manageUsersBtn" onclick="openAdminPanel()" style="display:none;padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12.5px;">👤 จัดการผู้ใช้</button>
+    <button onclick="doLogout()" style="padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12.5px;">ออกจากระบบ</button>
+  </div>
+
+  <header class="top">
+    <div class="eyebrow">ร้านค้า / คลังอะไหล่</div>
+    <h1>เช็คสตอคอะไหล่</h1>
+    <div class="sub-line">แตะการ์ดเพื่ออัปเดตยอดคงเหลือหรือเบิกอะไหล่</div>
+  </header>
+
+  <div class="room-tabs" id="roomTabs"></div>
+
+  <div class="toolbar">
+    <input id="searchBox" type="text" placeholder="ค้นหาอะไหล่ (ชื่อ หรือ รหัส)...">
+    <button id="refreshBtn" onclick="reloadFromStorage()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13px;">🔄 รีเฟรชข้อมูล</button>
+  </div>
+  <div class="cat-bar" id="catBar" style="max-width:960px;margin:0 auto 16px auto;"></div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-thumb" id="modalThumb"></div>
+      <label style="display:inline-block;font-size:12px;color:var(--steel);cursor:pointer;margin-bottom:8px;">
+        📷 เปลี่ยน/เพิ่มรูปภาพ
+        <input type="file" id="mImageFile" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
+      </label>
+      <div class="msub" id="modalCode"></div>
+
+      <label>ชื่ออะไหล่</label>
+      <input type="text" id="mName">
+
+      <label>รหัสสินค้า</label>
+      <div class="code-row">
+        <div class="code-input-col">
+          <input type="text" id="mCode" placeholder="เช่น SOL-024-A" oninput="renderBarcode()">
+        </div>
+        <div class="barcode-box" id="barcodeBox">
+          <span class="bc-empty">ยังไม่มีรหัส</span>
+        </div>
+      </div>
+
+      <label>หมวดหมู่</label>
+      <input type="text" id="mCategory" list="categoryList" placeholder="เช่น Solenoid">
+      <datalist id="categoryList"></datalist>
+
+      <label>ห้องจัดเก็บ</label>
+      <select id="mLocation">
+        <option value="MTG2A">MTG2A</option>
+        <option value="MTG2B">MTG2B</option>
+      </select>
+
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label>Min</label>
+          <input type="number" id="mMin" min="0">
+        </div>
+        <div style="flex:1;">
+          <label>Max</label>
+          <input type="number" id="mMax" min="0">
+        </div>
+      </div>
+
+      <div class="mode-toggle" id="modeToggleWrap">
+        <div class="mode-btn set active" id="modeBtnSet" onclick="setMode('set')">ตั้งยอดคงเหลือ</div>
+        <div class="mode-btn withdraw" id="modeBtnWithdraw" onclick="setMode('withdraw')">เบิกอะไหล่</div>
+      </div>
+
+      <div id="setWrap">
+        <label id="setQtyLabel">จำนวนคงเหลือวันนี้</label>
+        <input type="number" id="mQty" min="0">
+      </div>
+
+      <div id="withdrawWrap" style="display:none;">
+        <label>จำนวนที่เบิก</label>
+        <input type="number" id="mWithdrawQty" min="0" placeholder="0" oninput="updateWithdrawPreview()">
+        <div class="withdraw-preview" id="withdrawPreview"></div>
+      </div>
+
+      <label>สถานะการขอซื้อ</label>
+      <select id="mStatus">
+        <option>ยังไม่ขอซื้อ</option>
+        <option>อยู่ระหว่างขอซื้อ (PR)</option>
+        <option>สั่งซื้อแล้ว (PO)</option>
+        <option>ของมาแล้ว</option>
+      </select>
+
+      <div id="mPoWrap" style="display:none;">
+        <label>เลขที่ PR/PO</label>
+        <input type="text" id="mPoNumber" placeholder="เช่น PO-2026-045">
+      </div>
+
+      <div id="lastEditNote" style="font-size:11.5px;color:#888;background:#f8f9fb;padding:6px 10px;border-radius:6px;margin-top:10px;"></div>
+
+      <div id="modalMsg"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeModal()">ยกเลิก</button>
+        <button class="b-save" id="saveBtn" onclick="saveModal()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL = 'https://igkqkovgxnywmfidnndk.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlna3Frb3ZneG55d21maWRubmRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NTU3NjQsImV4cCI6MjEwMTMzMTc2NH0.RTRWVFdpNAuANzMtA6APhD1fOlUZrFAnLGTgqRq2Zn4';
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const IMAGE_BUCKET = 'part-images';
+
+  let currentUser = null; // {username, displayName, role, password}
+
+  async function doLogin(){
+    const u = document.getElementById('loginUsername').value.trim();
+    const pw = document.getElementById('loginPassword').value;
+    const msg = document.getElementById('loginMsg');
+    if(!u || !pw){ msg.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'; msg.style.color = '#c0392b'; return; }
+    msg.textContent = 'กำลังตรวจสอบ...'; msg.style.color = '#888';
+    try{
+      const { data, error } = await supabaseClient.rpc('login_user', { p_username: u, p_password: pw });
+      if(error) throw error;
+      if(!data || !data.length){
+        msg.textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+        msg.style.color = '#c0392b';
+        return;
+      }
+      const row = data[0];
+      currentUser = { username: row.username, displayName: row.display_name, role: row.role, password: pw };
+      document.getElementById('loginOverlay').classList.remove('show');
+      document.getElementById('userGreeting').textContent = `👋 ${currentUser.displayName} (${currentUser.role==='admin'?'ผู้ดูแลระบบ':'ผู้ใช้งาน'})`;
+      document.getElementById('manageUsersBtn').style.display = currentUser.role==='admin' ? 'inline-block' : 'none';
+      initApp();
+    }catch(e){
+      console.error('เข้าสู่ระบบไม่สำเร็จ', e);
+      msg.textContent = '⚠ เชื่อมต่อไม่สำเร็จ ตรวจสอบการตั้งค่า Supabase';
+      msg.style.color = '#c0392b';
+    }
+  }
+
+  function doLogout(){
+    currentUser = null;
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginMsg').textContent = '';
+    document.getElementById('loginOverlay').classList.add('show');
+  }
+
+  async function logActivity(action, part, detail){
+    if(!currentUser) return;
+    try{
+      const { error } = await supabaseClient.from('activity_log').insert({
+        part_code: part ? part.code : null,
+        part_name: part ? part.name : null,
+        action: action,
+        detail: detail || null,
+        username: currentUser.username,
+        display_name: currentUser.displayName
+      });
+      if(error) throw error;
+    }catch(e){
+      console.error('บันทึกประวัติไม่สำเร็จ', e);
+    }
+  }
+
+  function openAdminPanel(){
+    document.getElementById('newUserUsername').value = '';
+    document.getElementById('newUserDisplayName').value = '';
+    document.getElementById('newUserPassword').value = '';
+    document.getElementById('newUserRole').value = 'user';
+    document.getElementById('adminMsg').textContent = '';
+    loadUserList();
+    document.getElementById('adminOverlay').classList.add('show');
+  }
+  function closeAdminPanel(){ document.getElementById('adminOverlay').classList.remove('show'); }
+
+  async function loadUserList(){
+    const wrap = document.getElementById('userListWrap');
+    wrap.textContent = 'กำลังโหลดรายชื่อผู้ใช้...';
+    try{
+      const { data, error } = await supabaseClient.rpc('list_app_users', { p_admin_username: currentUser.username, p_admin_password: currentUser.password });
+      if(error) throw error;
+      if(!data || !data.length){ wrap.textContent = 'ยังไม่มีผู้ใช้ในระบบ'; return; }
+      wrap.innerHTML = '<b>รายชื่อผู้ใช้ทั้งหมด</b><br>' + data.map(u=>`${u.display_name} (${u.username}) — ${u.role==='admin'?'ผู้ดูแลระบบ':'ผู้ใช้งาน'}`).join('<br>');
+    }catch(e){
+      console.error(e);
+      wrap.textContent = '⚠ โหลดรายชื่อผู้ใช้ไม่สำเร็จ';
+    }
+  }
+
+  async function createNewUser(){
+    const username = document.getElementById('newUserUsername').value.trim();
+    const displayName = document.getElementById('newUserDisplayName').value.trim();
+    const password = document.getElementById('newUserPassword').value;
+    const role = document.getElementById('newUserRole').value;
+    const msg = document.getElementById('adminMsg');
+    if(!username || !displayName || !password){ msg.textContent = 'กรุณากรอกข้อมูลให้ครบ'; msg.style.color = '#c0392b'; return; }
+    msg.textContent = 'กำลังสร้างผู้ใช้...'; msg.style.color = '#888';
+    try{
+      const { data, error } = await supabaseClient.rpc('create_app_user', {
+        p_admin_username: currentUser.username, p_admin_password: currentUser.password,
+        p_new_username: username, p_new_password: password,
+        p_display_name: displayName, p_role: role
+      });
+      if(error) throw error;
+      if(data === 'ok'){
+        msg.textContent = 'เพิ่มผู้ใช้สำเร็จ'; msg.style.color = 'green';
+        loadUserList();
+      } else if(data === 'username_taken'){
+        msg.textContent = 'ชื่อผู้ใช้นี้ถูกใช้แล้ว'; msg.style.color = '#c0392b';
+      } else {
+        msg.textContent = 'ไม่มีสิทธิ์ดำเนินการ'; msg.style.color = '#c0392b';
+      }
+    }catch(e){
+      console.error(e);
+      msg.textContent = '⚠ สร้างผู้ใช้ไม่สำเร็จ'; msg.style.color = '#c0392b';
+    }
+  }
+
+  function onReportPeriodChange(){
+    const period = document.getElementById('reportPeriod').value;
+    document.getElementById('reportDateDay').style.display = period==='day' ? 'block' : 'none';
+    document.getElementById('reportDateMonth').style.display = period==='month' ? 'block' : 'none';
+    document.getElementById('reportDateYear').style.display = period==='year' ? 'block' : 'none';
+    document.getElementById('reportDateLabel').textContent = period==='day' ? 'วันที่' : period==='month' ? 'เดือน' : 'ปี';
+  }
+
+  function openReportModal(){
+    const today = new Date();
+    document.getElementById('reportPeriod').value = 'day';
+    document.getElementById('reportDateDay').value = today.toISOString().slice(0,10);
+    document.getElementById('reportDateMonth').value = today.toISOString().slice(0,7);
+    document.getElementById('reportDateYear').value = today.getFullYear();
+    onReportPeriodChange();
+    document.getElementById('reportSummary').innerHTML = '';
+    document.getElementById('reportList').innerHTML = '';
+    document.getElementById('reportOverlay').classList.add('show');
+  }
+  function closeReportModal(){ document.getElementById('reportOverlay').classList.remove('show'); }
+
+  let lastReportRows = [];
+  let lastReportLabel = '';
+
+  async function runReport(){
+    const period = document.getElementById('reportPeriod').value;
+    let startDate, endDate, labelText;
+    if(period==='day'){
+      const v = document.getElementById('reportDateDay').value;
+      if(!v) return;
+      startDate = new Date(v + 'T00:00:00');
+      endDate = new Date(startDate); endDate.setDate(endDate.getDate()+1);
+      labelText = 'วันที่ ' + startDate.toLocaleDateString('th-TH');
+    } else if(period==='month'){
+      const v = document.getElementById('reportDateMonth').value;
+      if(!v) return;
+      const parts2 = v.split('-').map(Number);
+      startDate = new Date(parts2[0], parts2[1]-1, 1);
+      endDate = new Date(parts2[0], parts2[1], 1);
+      labelText = 'เดือน ' + startDate.toLocaleDateString('th-TH', {month:'long', year:'numeric'});
+    } else {
+      const y = Number(document.getElementById('reportDateYear').value);
+      if(!y) return;
+      startDate = new Date(y, 0, 1);
+      endDate = new Date(y+1, 0, 1);
+      labelText = 'ปี ' + y;
+    }
+
+    const summaryEl = document.getElementById('reportSummary');
+    const listEl = document.getElementById('reportList');
+    summaryEl.textContent = 'กำลังโหลด...';
+    listEl.innerHTML = '';
+    try{
+      const { data, error } = await supabaseClient
+        .from('activity_log')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .lt('created_at', endDate.toISOString())
+        .order('created_at', { ascending:false });
+      if(error) throw error;
+      const rows = data || [];
+      lastReportRows = rows;
+      lastReportLabel = labelText;
+      if(!rows.length){
+        summaryEl.innerHTML = `<b>${labelText}</b> — ไม่มีการแก้ไขในช่วงนี้`;
+        listEl.innerHTML = '';
+        return;
+      }
+      const byUser = {};
+      const byAction = {};
+      rows.forEach(r=>{
+        const uName = r.display_name || r.username;
+        byUser[uName] = (byUser[uName]||0) + 1;
+        byAction[r.action] = (byAction[r.action]||0) + 1;
+      });
+      const userSummary = Object.entries(byUser).map(([u,c])=>`${u}: ${c} ครั้ง`).join(' · ');
+      const actionSummary = Object.entries(byAction).map(([a,c])=>`${a}: ${c}`).join(' · ');
+      summaryEl.innerHTML = `<b>${labelText}</b> — รวม ${rows.length} รายการ<br><span style="color:var(--sub)">${userSummary}</span><br><span style="color:var(--sub)">${actionSummary}</span>`;
+      listEl.innerHTML = rows.map(r=>{
+        const t = new Date(r.created_at).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'});
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--line);">
+          <b>${r.display_name||r.username}</b> — ${r.action} ${r.part_code?('· '+r.part_code):''}<br>
+          <span style="color:var(--sub);">${r.detail||''}</span><br>
+          <span style="color:#aaa;font-size:11px;">${t}</span>
+        </div>`;
+      }).join('');
+    }catch(e){
+      console.error(e);
+      summaryEl.textContent = '⚠ โหลดรายงานไม่สำเร็จ';
+    }
+  }
+
+  function exportReportCSV(){
+    if(!lastReportRows.length){ alert('ยังไม่มีข้อมูลรายงาน กรุณากด "ดูรายงาน" ก่อน'); return; }
+    const header = ['วันที่-เวลา','ผู้ใช้','รหัสอะไหล่','ชื่ออะไหล่','การกระทำ','รายละเอียด'];
+    const csvRows = [header.join(',')];
+    lastReportRows.forEach(r=>{
+      const t = new Date(r.created_at).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'});
+      const vals = [t, r.display_name||r.username, r.part_code||'', r.part_name||'', r.action, (r.detail||'')];
+      csvRows.push(vals.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+    });
+    const csvContent = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `รายงาน-${lastReportLabel.replace(/\s+/g,'_')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function toDbRow(p){
+    return {
+      code: p.code, category: p.category, name: p.name, unit: p.unit,
+      min: p.min, max: p.max, qty: p.qty, status: p.status,
+      po_number: p.poNumber, location: p.location,
+      image_url: p.imageUrl, updated_at: p.updatedAt, updated_by: p.updatedBy
+    };
+  }
+  function fromDbRow(r){
+    return {
+      code: r.code, category: r.category, name: r.name, unit: r.unit,
+      min: r.min, max: r.max, qty: r.qty, status: r.status,
+      poNumber: r.po_number, location: r.location,
+      imageUrl: r.image_url, updatedAt: r.updated_at, updatedBy: r.updated_by
+    };
+  }
+
+  // ไอคอนแบบง่ายต่อหมวดหมู่ (แทนรูปจริง — ของจริงจะดึงรูปจาก Google Drive)
+  const ICONS = {
+    'Solenoid': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="8" width="16" height="8" rx="1.5"/><path d="M8 8V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v3M2 12h2M20 12h2"/></svg>',
+    'Sensor': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>',
+    'Auto Switch': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="9" width="18" height="7" rx="2"/><circle cx="8" cy="12.5" r="1.4" fill="currentColor" stroke="none"/><path d="M13 12.5h5"/></svg>'
+  };
+  const DEFAULT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2-2 2.1-2.1z"/></svg>';
+
+  let parts = [
+    { code:'SOL-024-A', category:'Solenoid', name:'Solenoid Valve 24V DC', unit:'ตัว', min:5, max:20, qty:3, status:'อยู่ระหว่างขอซื้อ (PR)', poNumber:'PR-2026-118', updatedAt:'01/08/2026 09:14', updatedBy:'สมชาย', imageUrl:null, location:'MTG2A' },
+    { code:'SOL-110-B', category:'Solenoid', name:'Solenoid Coil 110V', unit:'ตัว', min:4, max:15, qty:9, status:'ยังไม่ขอซื้อ', poNumber:'', updatedAt:'29/07/2026 14:02', updatedBy:'สมชาย', imageUrl:null, location:'MTG2B' },
+    { code:'SEN-PNP-12', category:'Sensor', name:'Proximity Sensor PNP', unit:'ตัว', min:10, max:40, qty:6, status:'สั่งซื้อแล้ว (PO)', poNumber:'PO-2026-045', updatedAt:'02/08/2026 08:40', updatedBy:'มานะ', imageUrl:null, location:'MTG2A' },
+    { code:'SEN-PHOTO-03', category:'Sensor', name:'Photoelectric Sensor', unit:'ตัว', min:6, max:25, qty:18, status:'ยังไม่ขอซื้อ', poNumber:'', updatedAt:'28/07/2026 11:20', updatedBy:'มานะ', imageUrl:null, location:'MTG2B' },
+    { code:'SEN-TEMP-07', category:'Sensor', name:'Temperature Sensor PT100', unit:'ตัว', min:3, max:12, qty:2, status:'ของมาแล้ว', poNumber:'PO-2026-039', updatedAt:'30/07/2026 16:55', updatedBy:'สมชาย', imageUrl:null, location:'MTG2A' },
+    { code:'ASW-D73L', category:'Auto Switch', name:'Auto Switch D-C73L', unit:'ตัว', min:8, max:30, qty:11, status:'ยังไม่ขอซื้อ', poNumber:'', updatedAt:'27/07/2026 10:05', updatedBy:'วิชัย', imageUrl:null, location:'MTG2B' },
+    { code:'ASW-M9N', category:'Auto Switch', name:'Auto Switch D-M9N', unit:'ตัว', min:8, max:30, qty:4, status:'อยู่ระหว่างขอซื้อ (PR)', poNumber:'PR-2026-121', updatedAt:'02/08/2026 13:30', updatedBy:'วิชัย', imageUrl:null, location:'MTG2A' },
+    { code:'ASW-A93', category:'Auto Switch', name:'Auto Switch D-A93', unit:'ตัว', min:5, max:18, qty:15, status:'ยังไม่ขอซื้อ', poNumber:'', updatedAt:'25/07/2026 09:00', updatedBy:'วิชัย', imageUrl:null, location:'MTG2B' }
+  ];
+
+  let activeCategory = 'ทั้งหมด';
+  let activeRoom = 'MTG2A';
+  let addingCategory = false;
+  let renamingCategory = null;
+  let currentCode = null;
+  let pendingImageDataUrl = null;
+  let pendingImageFile = null;
+  let currentMode = 'set'; // 'set' | 'withdraw'
+
+  function iconFor(p){ return ICONS[p.category] || DEFAULT_ICON; }
+
+  function handleImageSelect(evt){
+    const file = evt.target.files[0];
+    if(!file) return;
+    pendingImageFile = file;
+    const reader = new FileReader();
+    reader.onload = function(e){
+      pendingImageDataUrl = e.target.result;
+      document.getElementById('modalThumb').innerHTML = `<img src="${pendingImageDataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ย่อขนาดรูปก่อนอัปโหลด (กว้าง/สูงไม่เกิน 1000px, JPEG คุณภาพ 80%) เพื่อประหยัดพื้นที่เก็บข้อมูลฟรี
+  function resizeImageFile(file, maxDim, quality){
+    maxDim = maxDim || 1000; quality = quality || 0.8;
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = function(e){
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = function(){
+          let w = img.width, h = img.height;
+          if(w > maxDim || h > maxDim){
+            if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/jpeg', quality);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadPendingImage(code){
+    if(!pendingImageFile) return null;
+    try{
+      const blob = await resizeImageFile(pendingImageFile);
+      const path = `${code}-${Date.now()}.jpg`;
+      const { error } = await supabaseClient.storage.from(IMAGE_BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+      if(error) throw error;
+      const { data } = supabaseClient.storage.from(IMAGE_BUCKET).getPublicUrl(path);
+      return data.publicUrl;
+    }catch(e){
+      console.error('อัปโหลดรูปภาพไม่สำเร็จ', e);
+      return null;
+    }
+  }
+
+  function badgeClass(status){
+    if(status.indexOf('PR')!==-1) return 'pr';
+    if(status.indexOf('PO')!==-1) return 'po';
+    if(status.indexOf('มาแล้ว')!==-1) return 'arrived';
+    return 'none';
+  }
+
+  function renderRoomTabs(){
+    const rooms = ['MTG2A','MTG2B'];
+    document.getElementById('roomTabs').innerHTML = rooms.map(r=>{
+      const items = parts.filter(p=>p.location===r);
+      const lowCount = items.filter(p=>p.qty < p.min).length;
+      return `
+        <div class="room-tab ${r===activeRoom?'active':''}" tabindex="0" onclick="setRoom('${r}')" onkeypress="if(event.key==='Enter')setRoom('${r}')">
+          <div class="rt-name">ห้อง ${r}</div>
+          <div class="rt-meta">${items.length} รายการ${lowCount?' · ต่ำกว่า Min ' + lowCount + ' รายการ':''}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function setRoom(r){
+    activeRoom = r;
+    activeCategory = 'ทั้งหมด';
+    renderRoomTabs();
+    renderCategories();
+    applyFilters();
+  }
+
+  function escapeAttr(str){ return String(str).replace(/'/g, "\\'"); }
+
+  function renderCategories(){
+    const roomParts = parts.filter(p=>p.location===activeRoom);
+    const cats = ['ทั้งหมด', ...new Set(roomParts.map(p=>p.category))];
+    const chipsHtml = cats.map(c => {
+      if(c === renamingCategory){
+        return `<div class="cat-chip-input">
+           <input type="text" id="renameCatInput" value="${c}" onkeydown="if(event.key==='Enter'){confirmRenameCategory('${escapeAttr(c)}');} if(event.key==='Escape'){cancelRenameCategory();}">
+           <span onclick="confirmRenameCategory('${escapeAttr(c)}')" title="ยืนยัน">✓</span>
+           <span class="cancel" onclick="cancelRenameCategory()" title="ยกเลิก">✕</span>
+         </div>`;
+      }
+      const editIcon = c==='ทั้งหมด' ? '' : `<span class="cat-edit-icon" onclick="event.stopPropagation(); startRenameCategory('${escapeAttr(c)}')" title="แก้ไขชื่อหมวดหมู่">✎</span>`;
+      return `<div class="cat-chip ${c===activeCategory?'active':''}" tabindex="0" onclick="setCategory('${escapeAttr(c)}')" onkeypress="if(event.key==='Enter')setCategory('${escapeAttr(c)}')">${c}${editIcon}</div>`;
+    }).join('');
+    const addHtml = addingCategory
+      ? `<div class="cat-chip-input">
+           <input type="text" id="newCatInput" placeholder="ชื่อหมวดหมู่ใหม่" onkeydown="if(event.key==='Enter'){confirmAddCategory();} if(event.key==='Escape'){cancelAddCategory();}">
+           <span onclick="confirmAddCategory()" title="ยืนยัน">✓</span>
+           <span class="cancel" onclick="cancelAddCategory()" title="ยกเลิก">✕</span>
+         </div>`
+      : `<div class="cat-chip cat-add" tabindex="0" onclick="startAddCategory()" onkeypress="if(event.key==='Enter')startAddCategory()">+ เพิ่มหมวดหมู่</div>`;
+    document.getElementById('catBar').innerHTML = chipsHtml + addHtml;
+    if(addingCategory){
+      const el = document.getElementById('newCatInput');
+      if(el) el.focus();
+    }
+    if(renamingCategory){
+      const el = document.getElementById('renameCatInput');
+      if(el){ el.focus(); el.select(); }
+    }
+  }
+
+  function startRenameCategory(oldName){
+    renamingCategory = oldName;
+    addingCategory = false;
+    renderCategories();
+  }
+  function cancelRenameCategory(){
+    renamingCategory = null;
+    renderCategories();
+  }
+  function confirmRenameCategory(oldName){
+    const el = document.getElementById('renameCatInput');
+    const newName = el ? el.value.trim() : '';
+    renamingCategory = null;
+    if(!newName || newName===oldName){ renderCategories(); return; }
+    const affectedCount = parts.filter(p=>p.category===oldName).length;
+    parts.forEach(p=>{ if(p.category===oldName) p.category = newName; });
+    if(activeCategory===oldName) activeCategory = newName;
+    persistParts();
+    logActivity('เปลี่ยนชื่อหมวดหมู่', null, `เปลี่ยนหมวดหมู่ "${oldName}" เป็น "${newName}" (${affectedCount} รายการ)`);
+    renderCategories();
+    applyFilters();
+  }
+
+  function startAddCategory(){
+    addingCategory = true;
+    renamingCategory = null;
+    renderCategories();
+  }
+  function cancelAddCategory(){
+    addingCategory = false;
+    renderCategories();
+  }
+  function confirmAddCategory(){
+    const el = document.getElementById('newCatInput');
+    const val = el ? el.value.trim() : '';
+    addingCategory = false;
+    if(!val){ renderCategories(); return; }
+    openAddModal(val);
+  }
+
+  function setCategory(c){ activeCategory = c; renderCategories(); applyFilters(); }
+
+  function applyFilters(){
+    const q = document.getElementById('searchBox').value.trim().toLowerCase();
+    const filtered = parts.filter(p=>{
+      const matchRoom = p.location===activeRoom;
+      const matchCat = activeCategory==='ทั้งหมด' || p.category===activeCategory;
+      const matchQ = p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q);
+      return matchRoom && matchCat && matchQ;
+    });
+    render(filtered);
+  }
+
+  function render(list){
+    const grid = document.getElementById('grid');
+    const addCardHtml = `
+        <div class="card add-card" tabindex="0" onclick="openAddModal()" onkeypress="if(event.key==='Enter')openAddModal()">
+          <div class="ac-inner">
+            <div class="ac-plus">+</div>
+            <div class="ac-label">เพิ่มอะไหล่ใหม่</div>
+          </div>
+        </div>`;
+    if(list.length===0){
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--sub);padding:30px 0;">ไม่พบอะไหล่ที่ตรงกับคำค้นหา</div>' + addCardHtml;
+      return;
+    }
+    grid.innerHTML = list.map(p=>{
+      const low = p.qty < p.min;
+      const cardClass = low ? 'low' : 'ok';
+      return `
+        <div class="card ${cardClass}" tabindex="0" onclick="openModal('${p.code}')" onkeypress="if(event.key==='Enter')openModal('${p.code}')">
+          <div class="thumb">${p.imageUrl ? `<img src="${p.imageUrl}" style="width:100%;height:100%;object-fit:cover;">` : iconFor(p)}</div>
+          <div class="body">
+            <div class="cat-label">${p.category}</div>
+            <div class="p-name">${p.name}</div>
+            <div class="p-code">${p.code}</div>
+            <div class="stat-line"><span>Min – Max</span><span>${p.min} – ${p.max} ${p.unit}</span></div>
+            <div class="stat-line"><span>คงเหลือ</span><span class="qty ${low?'low':''}">${p.qty} ${p.unit}</span></div>
+            <div class="badge ${badgeClass(p.status)}">${p.status}${p.poNumber?' · '+p.poNumber:''}</div>
+            <div class="upd">แก้ไขล่าสุด: ${p.updatedAt} โดย ${p.updatedBy}</div>
+          </div>
+        </div>`;
+    }).join('') + addCardHtml;
+  }
+
+  document.getElementById('searchBox').addEventListener('input', applyFilters);
+
+  function setMode(mode){
+    currentMode = mode;
+    document.getElementById('modeBtnSet').classList.toggle('active', mode==='set');
+    document.getElementById('modeBtnWithdraw').classList.toggle('active', mode==='withdraw');
+    document.getElementById('setWrap').style.display = mode==='set' ? 'block' : 'none';
+    document.getElementById('withdrawWrap').style.display = mode==='withdraw' ? 'block' : 'none';
+    document.getElementById('modalMsg').textContent = '';
+    if(mode==='withdraw'){
+      document.getElementById('mWithdrawQty').value = '';
+      updateWithdrawPreview();
+    }
+  }
+
+  function updateWithdrawPreview(){
+    const p = parts.find(x=>x.code===currentCode);
+    if(!p) return;
+    const wEl = document.getElementById('mWithdrawQty');
+    const w = Number(wEl.value);
+    const previewEl = document.getElementById('withdrawPreview');
+    if(wEl.value===''||isNaN(w)||w<=0){
+      previewEl.classList.remove('show','warn');
+      return;
+    }
+    const after = p.qty - w;
+    previewEl.classList.add('show');
+    if(after < 0){
+      previewEl.classList.add('warn');
+      previewEl.innerHTML = `⚠ จำนวนเบิกมากกว่าคงเหลือ (มีอยู่ ${p.qty} ${p.unit})`;
+    } else {
+      previewEl.classList.remove('warn');
+      previewEl.innerHTML = `คงเหลือหลังเบิก: <b>${after} ${p.unit}</b> (จาก ${p.qty} ${p.unit})`;
+    }
+  }
+
+  function renderBarcode(){
+    const box = document.getElementById('barcodeBox');
+    const val = document.getElementById('mCode').value.trim();
+    if(!val){
+      box.innerHTML = '<span class="bc-empty">ยังไม่มีรหัส</span>';
+      return;
+    }
+    if(typeof JsBarcode === 'undefined'){
+      box.innerHTML = '<span class="bc-empty">โหลดไลบรารีบาร์โค้ดไม่สำเร็จ</span>';
+      return;
+    }
+    box.innerHTML = '<svg id="barcodeSvg"></svg>';
+    try{
+      JsBarcode('#barcodeSvg', val, {
+        format: 'CODE128',
+        width: 1.6,
+        height: 40,
+        fontSize: 11,
+        margin: 4,
+        displayValue: true
+      });
+    }catch(e){
+      box.innerHTML = '<span class="bc-empty">รหัสไม่ถูกต้องสำหรับสร้างบาร์โค้ด</span>';
+    }
+  }
+
+  function populateCategoryDatalist(){
+    const cats = [...new Set(parts.map(p=>p.category))];
+    document.getElementById('categoryList').innerHTML = cats.map(c=>`<option value="${c}"></option>`).join('');
+  }
+
+  function openAddModal(presetCategory){
+    currentCode = null;
+    pendingImageDataUrl = null;
+    pendingImageFile = null;
+    document.getElementById('modalThumb').innerHTML = DEFAULT_ICON;
+    document.getElementById('modalCode').textContent = 'รายการอะไหล่ใหม่';
+    document.getElementById('mName').value = '';
+    document.getElementById('mCode').value = '';
+    populateCategoryDatalist();
+    document.getElementById('mCategory').value = presetCategory || (activeCategory!=='ทั้งหมด' ? activeCategory : '');
+    document.getElementById('mLocation').value = activeRoom;
+    document.getElementById('mMin').value = 0;
+    document.getElementById('mMax').value = 0;
+    document.getElementById('mQty').value = 0;
+    document.getElementById('mWithdrawQty').value = '';
+    document.getElementById('mStatus').value = 'ยังไม่ขอซื้อ';
+    document.getElementById('mPoNumber').value = '';
+    document.getElementById('modalMsg').textContent = '';
+    document.getElementById('lastEditNote').textContent = 'รายการใหม่ — ยังไม่เคยบันทึก';
+    document.getElementById('setQtyLabel').textContent = 'จำนวนเริ่มต้น';
+    document.getElementById('modeToggleWrap').style.display = 'none';
+    document.getElementById('saveBtn').textContent = 'เพิ่มอะไหล่';
+    toggleStatusField();
+    setMode('set');
+    renderBarcode();
+    document.getElementById('overlay').classList.add('show');
+  }
+
+  function openModal(code){
+    const p = parts.find(x=>x.code===code);
+    if(!p) return;
+    currentCode = code;
+    pendingImageDataUrl = null;
+    pendingImageFile = null;
+    document.getElementById('modalThumb').innerHTML = p.imageUrl ? `<img src="${p.imageUrl}" style="width:100%;height:100%;object-fit:cover;">` : iconFor(p);
+    document.getElementById('modalCode').textContent = p.category + ' · หน่วย: ' + p.unit;
+    document.getElementById('mName').value = p.name;
+    document.getElementById('mCode').value = p.code;
+    populateCategoryDatalist();
+    document.getElementById('mCategory').value = p.category;
+    document.getElementById('mLocation').value = p.location;
+    renderBarcode();
+    document.getElementById('mMin').value = p.min;
+    document.getElementById('mMax').value = p.max;
+    document.getElementById('mQty').value = p.qty;
+    document.getElementById('mWithdrawQty').value = '';
+    document.getElementById('mStatus').value = p.status;
+    document.getElementById('mPoNumber').value = p.poNumber;
+    document.getElementById('modalMsg').textContent = '';
+    document.getElementById('lastEditNote').textContent = `แก้ไขล่าสุด: ${p.updatedAt} โดย ${p.updatedBy}`;
+    document.getElementById('setQtyLabel').textContent = 'จำนวนคงเหลือวันนี้';
+    document.getElementById('modeToggleWrap').style.display = 'flex';
+    document.getElementById('saveBtn').textContent = 'บันทึก';
+    toggleStatusField();
+    setMode('set');
+    document.getElementById('overlay').classList.add('show');
+  }
+  function closeModal(){ document.getElementById('overlay').classList.remove('show'); currentCode=null; }
+  document.getElementById('mStatus').addEventListener('change', toggleStatusField);
+  function toggleStatusField(){
+    const v = document.getElementById('mStatus').value;
+    document.getElementById('mPoWrap').style.display = (v.indexOf('PR')!==-1||v.indexOf('PO')!==-1) ? 'block':'none';
+  }
+
+  async function saveModal(){
+    const isNew = (currentCode === null);
+    const p = isNew ? null : parts.find(x=>x.code===currentCode);
+    const status = document.getElementById('mStatus').value;
+    const poNumber = document.getElementById('mPoNumber').value;
+    const updatedBy = currentUser ? currentUser.displayName : 'ไม่ทราบผู้ใช้';
+    const msg = document.getElementById('modalMsg');
+
+    const name = document.getElementById('mName').value.trim();
+    if(!name){ msg.textContent='กรุณาใส่ชื่ออะไหล่'; msg.className='err'; return; }
+
+    const category = document.getElementById('mCategory').value.trim();
+    if(!category){ msg.textContent='กรุณาใส่หมวดหมู่'; msg.className='err'; return; }
+
+    const newCode = document.getElementById('mCode').value.trim();
+    if(!newCode){ msg.textContent='กรุณาใส่รหัสสินค้า'; msg.className='err'; return; }
+    const codeTaken = parts.some(x => x.code===newCode && (isNew || x.code !== p.code));
+    if(codeTaken){
+      msg.textContent = 'รหัสนี้ถูกใช้กับอะไหล่ชิ้นอื่นแล้ว';
+      msg.className='err';
+      return;
+    }
+
+    let uploadedImageUrl = null;
+    if(pendingImageFile){
+      msg.textContent = 'กำลังอัปโหลดรูปภาพ...';
+      msg.className = '';
+      uploadedImageUrl = await uploadPendingImage(newCode);
+    }
+
+    let newQty;
+    if(!isNew && currentMode==='withdraw'){
+      const w = Number(document.getElementById('mWithdrawQty').value);
+      if(document.getElementById('mWithdrawQty').value===''||isNaN(w)||w<=0){
+        msg.textContent='กรุณากรอกจำนวนที่เบิกเป็นตัวเลขมากกว่า 0';
+        msg.className='err';
+        return;
+      }
+      if(w > p.qty){
+        msg.textContent = `เบิกไม่ได้ — มีคงเหลือแค่ ${p.qty} ${p.unit}`;
+        msg.className='err';
+        return;
+      }
+      newQty = p.qty - w;
+    } else {
+      const qty = document.getElementById('mQty').value;
+      if(qty===''||isNaN(qty)){ msg.textContent='กรุณากรอกจำนวนเป็นตัวเลข'; msg.className='err'; return; }
+      newQty = Number(qty);
+    }
+
+    const min = Number(document.getElementById('mMin').value) || 0;
+    const max = Number(document.getElementById('mMax').value) || 0;
+    const location = document.getElementById('mLocation').value;
+    const prevQty = isNew ? null : p.qty;
+    const now = new Date();
+    const nowStr = now.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+
+    if(isNew){
+      const newPart = {
+        code:newCode, category:category, name:name, unit:'ตัว',
+        min:min, max:max, qty:newQty, status:status, poNumber:poNumber,
+        updatedAt:nowStr, updatedBy:updatedBy,
+        imageUrl: uploadedImageUrl || null, location:location
+      };
+      parts.push(newPart);
+      msg.textContent = 'เพิ่มอะไหล่สำเร็จ';
+      msg.className = 'ok';
+      persistParts();
+      logActivity('เพิ่มอะไหล่ใหม่', newPart, `เพิ่ม ${newPart.name} จำนวนเริ่มต้น ${newPart.qty} ${newPart.unit} ที่ห้อง ${newPart.location}`);
+      setTimeout(()=>{
+        closeModal();
+        activeRoom = newPart.location;
+        activeCategory = newPart.category;
+        renderRoomTabs(); renderCategories(); applyFilters();
+      }, 500);
+      return;
+    }
+
+    p.code = newCode;
+    p.category = category;
+    p.name = name;
+    p.min = min;
+    p.max = max;
+    p.location = location;
+    if(uploadedImageUrl){ p.imageUrl = uploadedImageUrl; }
+    p.qty = newQty;
+    p.status = status;
+    p.poNumber = poNumber;
+    p.updatedBy = updatedBy;
+    p.updatedAt = nowStr;
+
+    msg.textContent = currentMode==='withdraw' ? 'เบิกสำเร็จ' : 'บันทึกสำเร็จ';
+    msg.className = 'ok';
+    persistParts();
+    if(currentMode==='withdraw'){
+      logActivity('เบิกอะไหล่', p, `เบิก ${prevQty - newQty} ${p.unit} (จาก ${prevQty} เหลือ ${newQty})`);
+    } else {
+      logActivity('แก้ไข/ปรับยอด', p, `ปรับจำนวนจาก ${prevQty} เป็น ${newQty} ${p.unit}`);
+    }
+    setTimeout(()=>{ closeModal(); renderRoomTabs(); renderCategories(); applyFilters(); }, 500);
+  }
+
+  async function persistParts(){
+    const statusEl = document.getElementById('syncStatus');
+    try{
+      const { error } = await supabaseClient.from('parts').upsert(parts.map(toDbRow), { onConflict: 'code' });
+      if(error) throw error;
+      if(statusEl) statusEl.textContent = 'บันทึกล่าสุด: ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){
+      console.error('บันทึกข้อมูลไม่สำเร็จ', e);
+      if(statusEl) statusEl.textContent = '⚠ บันทึกไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต/การตั้งค่า Supabase';
+    }
+  }
+
+  async function reloadFromStorage(){
+    const statusEl = document.getElementById('syncStatus');
+    if(statusEl) statusEl.textContent = 'กำลังรีเฟรช...';
+    try{
+      const { data, error } = await supabaseClient.from('parts').select('*').order('code');
+      if(error) throw error;
+      parts = (data || []).map(fromDbRow);
+      renderRoomTabs();
+      renderCategories();
+      applyFilters();
+      if(statusEl) statusEl.textContent = 'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){
+      console.error('โหลดข้อมูลไม่สำเร็จ', e);
+      if(statusEl) statusEl.textContent = '⚠ โหลดข้อมูลไม่สำเร็จ';
+    }
+  }
+
+  async function initApp(){
+    const statusEl = document.getElementById('syncStatus');
+    try{
+      const { data, error } = await supabaseClient.from('parts').select('*').order('code');
+      if(error) throw error;
+      if(data && data.length){
+        parts = data.map(fromDbRow);
+      } else {
+        // ตารางว่าง (ครั้งแรก) — เติมข้อมูลตัวอย่างตั้งต้นลงฐานข้อมูล
+        const { error: seedErr } = await supabaseClient.from('parts').upsert(parts.map(toDbRow), { onConflict: 'code' });
+        if(seedErr) throw seedErr;
+      }
+      if(statusEl) statusEl.textContent = 'เชื่อมต่อฐานข้อมูลสำเร็จ · ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){
+      console.error('เชื่อมต่อฐานข้อมูลไม่สำเร็จ ใช้ข้อมูลตัวอย่างแบบไม่บันทึกแทน', e);
+      if(statusEl) statusEl.textContent = '⚠ เชื่อมต่อ Supabase ไม่สำเร็จ ตรวจสอบตาราง/policy';
+    }
+    renderRoomTabs();
+    renderCategories();
+    applyFilters();
+  }
+
+  // initApp() is now triggered from doLogin() after a successful login
+</script>
+</body>
+</html>
