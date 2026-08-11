@@ -1,0 +1,3977 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>เช็คสตอคอะไหล่</title>
+<style>
+  :root{
+    --bg:#eef1f4;
+    --panel:#ffffff;
+    --ink:#1c2430;
+    --sub:#5b6675;
+    --line:#dde2e8;
+    --steel:#3b4a5e;
+    --steel-dark:#28323f;
+    --amber:#c8791f;
+    --green:#2f7d4f;
+    --red:#c23b3b;
+    --mono: 'IBM Plex Mono', 'Consolas', monospace;
+    --sans: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:
+      radial-gradient(circle at 1px 1px, #d7dce2 1px, transparent 0) 0 0/22px 22px,
+      var(--bg);
+    color:var(--ink);
+    padding:22px 16px 60px;
+  }
+  .demo-tag{
+    max-width:960px;
+    margin:0 auto 18px auto;
+    background:var(--steel-dark);
+    color:#e7ebf0;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.06em;
+    padding:8px 14px;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .demo-tag b{ color:#ffb454; }
+
+  header.top{
+    max-width:960px;
+    margin:0 auto 18px auto;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    color:var(--sub);
+    text-transform:uppercase;
+  }
+  h1{
+    font-size:26px;
+    margin:4px 0 2px 0;
+    letter-spacing:-0.01em;
+  }
+  .sub-line{ color:var(--sub); font-size:13px; }
+
+  .toolbar{
+    max-width:960px;
+    margin:0 auto 14px auto;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  #searchBox{
+    flex:1;
+    min-width:200px;
+    padding:10px 14px;
+    font-size:14px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--panel);
+    font-family:var(--sans);
+  }
+  #searchBox:focus{ outline:2px solid var(--steel); outline-offset:1px; }
+
+  .sticky-toolbar-wrap{
+    position:sticky; top:0; z-index:15;
+    background:var(--bg);
+    padding:10px 16px 6px;
+    margin:0 -16px 14px -16px;
+    transition:box-shadow .15s ease;
+  }
+  .sticky-toolbar-wrap.scrolled{
+    box-shadow:0 4px 12px rgba(20,26,34,.12);
+    border-bottom:1px solid var(--line);
+  }
+  .search-wrap{ position:relative; flex:1; min-width:200px; }
+  .search-wrap #searchBox{ width:100%; padding-right:34px; }
+  .search-clear-btn{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    border:none; background:transparent; cursor:pointer; font-size:15px; color:var(--sub);
+    display:none; width:24px; height:24px; border-radius:50%; line-height:1;
+  }
+  .search-clear-btn:hover{ background:var(--line); }
+
+  #backToTopBtn{
+    display:none; align-items:center; justify-content:center;
+    position:fixed; right:20px; bottom:24px; z-index:18;
+    width:46px; height:46px; border-radius:50%; border:none;
+    background:var(--steel-dark); color:#fff; font-size:20px; cursor:pointer;
+    box-shadow:0 4px 12px rgba(20,26,34,.3);
+  }
+  #backToTopBtn:hover{ background:var(--steel); }
+
+  .stock-table th.sortable{ cursor:pointer; user-select:none; }
+  .stock-table th.sortable:hover{ background:#222d3a; }
+  .stock-table .sort-arrow{ font-size:10px; margin-left:3px; opacity:.85; }
+
+  .cat-bar{ display:flex; gap:6px; flex-wrap:wrap; }
+  .cat-chip{
+    padding:8px 14px;
+    border-radius:7px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    font-size:12.5px;
+    font-family:var(--mono);
+    cursor:pointer;
+    color:var(--steel);
+  }
+  .cat-chip.active{ background:var(--steel-dark); border-color:var(--steel-dark); color:#fff; }
+  .cat-chip:focus-visible{ outline:2px solid var(--steel); outline-offset:1px; }
+  .cat-chip.cat-add{
+    border-style:dashed;
+    color:var(--steel);
+    font-weight:700;
+  }
+  .cat-chip .cat-edit-icon{
+    display:inline-block;
+    margin-left:6px;
+    opacity:.55;
+    font-size:11px;
+  }
+  .cat-chip .cat-edit-icon:hover{ opacity:1; }
+  .cat-chip-input{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    padding:5px 7px;
+    border-radius:7px;
+    background:var(--panel);
+    border:1px solid var(--steel);
+  }
+  .cat-chip-input input{
+    border:none;
+    outline:none;
+    font-size:12.5px;
+    font-family:var(--sans);
+    width:120px;
+    padding:2px;
+  }
+  .cat-chip-input span{
+    cursor:pointer;
+    font-weight:700;
+    font-size:14px;
+    padding:0 3px;
+    color:var(--steel);
+  }
+  .cat-chip-input span.cancel{ color:var(--red); }
+
+  .card.add-card{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:200px;
+    border:2px dashed var(--line);
+    border-left:2px dashed var(--line);
+    background:transparent;
+    color:var(--steel);
+    text-align:center;
+  }
+  .card.add-card:hover{ border-color:var(--steel); }
+  .add-card .ac-inner{ padding:14px; }
+  .add-card .ac-plus{ font-size:26px; font-weight:700; line-height:1; }
+  .add-card .ac-label{ font-size:13px; font-weight:600; margin-top:4px; }
+
+  .grid{
+    max-width:960px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(225px,1fr));
+    gap:14px;
+  }
+  .stock-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13.5px;
+    min-width:960px;
+  }
+  .stock-table thead th{
+    position:sticky; top:0; background:var(--steel-dark); color:#fff;
+    text-align:left; padding:10px 12px; font-weight:600; font-size:12.5px;
+    letter-spacing:.02em; white-space:nowrap; z-index:1;
+  }
+  .stock-table tbody td{
+    padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:middle;
+  }
+  .stock-table tbody tr:hover{ background:#f4f6f8; }
+  .stock-table .st-code{ font-family:var(--mono); font-weight:700; white-space:nowrap; }
+  .stock-table .st-name{ font-weight:600; }
+  .stock-table .st-sub{ color:var(--sub); font-size:12px; }
+  .stock-table .st-num{ text-align:center; font-family:var(--mono); }
+  .stock-table .st-qty-input{
+    width:72px; text-align:center; font-family:var(--mono); font-weight:700;
+    padding:5px 6px; border-radius:6px; border:1.4px solid var(--line);
+  }
+  .stock-table .st-qty-input.low{ border-color:var(--red); color:var(--red); }
+  .stock-table .st-status-select{
+    width:100%; min-width:150px; font-family:var(--sans); font-size:12.5px; font-weight:600;
+    padding:5px 6px; border-radius:6px; border:1.4px solid var(--line); background:#fff; color:var(--ink);
+  }
+  .stock-table .st-po-input{
+    width:100%; margin-top:4px; font-family:var(--mono); font-size:11.5px;
+    padding:4px 6px; border-radius:6px; border:1.4px solid var(--line);
+  }
+  .stock-table .st-meta{ color:var(--sub); font-size:11.5px; line-height:1.4; white-space:nowrap; }
+  .stock-table .st-saving{ color:var(--amber); font-size:11px; margin-left:6px; }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+    border-left:3px solid var(--line);
+    content-visibility:auto;
+    contain-intrinsic-size:auto 260px;
+  }
+  .card:hover{ transform:translateY(-2px); box-shadow:0 6px 16px rgba(28,36,48,0.08); }
+  .card:focus-visible{ outline:2px solid var(--steel); outline-offset:2px; }
+  .card.low{ border-left-color:var(--red); }
+  .card.ok{ border-left-color:var(--green); }
+
+  .thumb{
+    height:118px;
+    background:
+      linear-gradient(135deg, #f4f6f8 25%, transparent 25%) -10px 0/20px 20px,
+      linear-gradient(225deg, #f4f6f8 25%, transparent 25%) -10px 0/20px 20px,
+      #e7ebef;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .thumb svg{ width:46px; height:46px; opacity:.55; }
+
+  .body{ padding:12px 14px 14px; }
+  .cat-label{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--amber);
+    font-weight:600;
+  }
+  .p-name{ font-weight:700; font-size:14.5px; margin-top:3px; line-height:1.25; }
+  .info-rows{ display:flex; flex-direction:column; gap:3px; margin:5px 0 9px; }
+  .info-row{
+    display:flex; align-items:center; gap:5px;
+    font-family:var(--mono); font-size:14.5px; font-weight:700; color:#000;
+    padding:2px 7px; border-radius:6px; border:1.4px solid; background:#fff;
+    line-height:1.3;
+  }
+  .info-row .info-tag{ font-family:inherit; font-weight:700; font-size:10px; opacity:.7; }
+  .info-row.row-code{ border-color:#2e7dd7; }
+  .info-row.row-model{ border-color:#1fa15a; }
+  .info-row.row-brand{ border-color:#e08a1e; }
+  .info-row.row-spot{ border-color:#8a5ad1; }
+
+  .stat-line{ display:flex; justify-content:space-between; font-size:12.5px; margin-top:3px; }
+  .stat-line span:first-child{ color:var(--sub); }
+  .qty{ font-weight:700; font-family:var(--mono); }
+  .qty.low{ color:var(--red); }
+
+  .badge{
+    display:inline-block;
+    margin-top:9px;
+    padding:3px 9px;
+    border-radius:5px;
+    font-size:11px;
+    font-family:var(--mono);
+    font-weight:600;
+  }
+  .badge.none{ background:#eef0f2; color:#697180; }
+  .badge.pr{ background:#fbeed9; color:#8a5a12; }
+  .badge.po{ background:#dde7f7; color:#2d4f8f; }
+  .badge.arrived{ background:#dcefe0; color:#20613c; }
+
+  .upd{ font-size:10.5px; color:#98a1ac; margin-top:8px; }
+  summary::-webkit-details-marker{ display:none; }
+  summary::marker{ content:""; }
+
+  /* modal */
+  .overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,26,34,.5);
+    align-items:center; justify-content:center; padding:16px; z-index:20;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:var(--panel); border-radius:12px; padding:20px;
+    width:100%; max-width:380px; max-height:90vh; overflow-y:auto;
+    position:relative;
+  }
+  .modal-close{
+    position:sticky;
+    top:0;
+    display:flex;
+    justify-content:flex-end;
+    margin:-20px -20px 4px -20px;
+    padding:10px 12px 0;
+    z-index:6;
+    pointer-events:none;
+  }
+  .modal-close span{
+    pointer-events:auto;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    height:28px;
+    border-radius:7px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    font-size:15px;
+    color:var(--sub);
+    cursor:pointer;
+  }
+  .modal-close span:hover{ color:var(--ink); border-color:var(--steel); }
+  .modal-thumb{
+    height:130px; border-radius:8px; background:#e7ebef;
+    display:flex; align-items:center; justify-content:center; margin-bottom:12px;
+  }
+  .modal-thumb svg{ width:50px; height:50px; opacity:.55; }
+  .modal h2{ font-size:16px; margin:0 0 2px; }
+  .modal .msub{ font-family:var(--mono); font-size:11px; color:var(--sub); margin-bottom:10px; }
+  .modal label{ display:block; font-size:12.5px; font-weight:600; margin:12px 0 5px; }
+  .modal select, .modal input, .modal textarea{
+    width:100%; padding:9px 10px; font-size:14.5px;
+    border:1px solid var(--line); border-radius:7px; font-family:var(--sans);
+  }
+  .modal textarea{ resize:vertical; }
+  .mbtns{ display:flex; gap:8px; margin-top:18px; }
+  .mbtns button{ flex:1; padding:11px; font-size:14.5px; font-weight:600; border:none; border-radius:7px; cursor:pointer; }
+  .b-cancel{ background:#eef0f2; color:#333; }
+  .b-save{ background:var(--steel-dark); color:#fff; }
+  .b-save:disabled{ opacity:.5; }
+  #modalMsg{ font-size:12.5px; margin-top:8px; text-align:center; }
+  #modalMsg.err{ color:var(--red); }
+  #modalMsg.ok{ color:var(--green); }
+  #purchaseModalMsg{ font-size:12.5px; margin-top:8px; text-align:center; }
+  #purchaseModalMsg.err{ color:var(--red); }
+  #purchaseModalMsg.ok{ color:var(--green); }
+
+  /* mode toggle (ตั้งยอด vs เบิก) */
+  .mode-toggle{
+    display:flex;
+    gap:6px;
+    margin-top:16px;
+    padding-top:12px;
+    border-top:1px solid #eee;
+  }
+  .mode-btn{
+    flex:1;
+    padding:9px 6px;
+    border-radius:7px;
+    border:1px solid var(--line);
+    background:#f7f8fa;
+    color:var(--sub);
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    text-align:center;
+  }
+  .mode-btn.active.set{ background:var(--steel-dark); border-color:var(--steel-dark); color:#fff; }
+  .mode-btn.active.withdraw{ background:var(--red); border-color:var(--red); color:#fff; }
+
+  .withdraw-preview{
+    margin-top:8px;
+    font-size:12.5px;
+    background:#fbeeee;
+    color:#8a2f2f;
+    border-radius:6px;
+    padding:8px 10px;
+    display:none;
+  }
+  .withdraw-preview.show{ display:block; }
+  .withdraw-preview b{ font-family:var(--mono); }
+  .withdraw-preview.warn{ background:#fde8e8; color:var(--red); font-weight:700; }
+
+  .code-row{
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    flex-wrap:wrap;
+  }
+  .code-row .code-input-col{ flex:1; min-width:120px; }
+  .barcode-box{
+    flex:1;
+    min-width:130px;
+    min-height:54px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:7px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:4px;
+  }
+  .barcode-box svg{ max-width:100%; height:auto; }
+  .barcode-box .bc-empty{ font-size:11px; color:#b7bdc6; font-family:var(--mono); }
+  #barcodeLightboxBox{ width:100%; box-sizing:border-box; overflow:hidden; }
+  #barcodeLightboxBox svg{ display:block; width:100%; max-width:100%; height:auto; }
+
+  .room-tabs{
+    max-width:960px;
+    margin:0 auto 14px auto;
+    display:flex;
+    gap:10px;
+  }
+  .room-tab{
+    flex:1;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 16px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .room-tab .rt-name{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:15px;
+    color:var(--ink);
+  }
+  .room-tab .rt-meta{
+    font-size:11.5px;
+    color:var(--sub);
+    margin-top:3px;
+  }
+  .room-tab.active{
+    background:var(--steel-dark);
+    border-color:var(--steel-dark);
+  }
+  .room-tab.active .rt-name{ color:#fff; }
+  .room-tab.active .rt-meta{ color:#c7cdd6; }
+  .room-tab:focus-visible{ outline:2px solid var(--steel); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+  <div class="overlay show" id="loginOverlay">
+    <div class="modal" style="max-width:340px;">
+      <h2 style="margin-bottom:2px;">เข้าสู่ระบบ</h2>
+      <div class="msub">คลังอะไหล่ · เช็คสตอค</div>
+      <label>ชื่อผู้ใช้</label>
+      <input type="text" id="loginUsername" autocomplete="username">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <div id="loginMsg" style="margin-top:8px;font-size:13px;"></div>
+      <div class="mbtns">
+        <button class="b-save" style="flex:1;" onclick="doLogin()">เข้าสู่ระบบ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="adminOverlay">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-close"><span onclick="closeAdminPanel()" title="ปิด">✕</span></div>
+      <h2>จัดการผู้ใช้</h2>
+      <div class="msub">เพิ่มบัญชีผู้ใช้ใหม่ (เฉพาะผู้ดูแลระบบ)</div>
+      <label>ชื่อผู้ใช้ใหม่ (สำหรับล็อกอิน)</label>
+      <input type="text" id="newUserUsername">
+      <label>ชื่อที่แสดง</label>
+      <input type="text" id="newUserDisplayName">
+      <label>รหัสผ่าน</label>
+      <input type="text" id="newUserPassword">
+      <label>สิทธิ์</label>
+      <select id="newUserRole">
+        <option value="user">ผู้ใช้งานทั่วไป</option>
+        <option value="admin">ผู้ดูแลระบบ</option>
+      </select>
+      <div id="adminMsg" style="font-size:12.5px;margin-top:8px;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeAdminPanel()">ปิด</button>
+        <button class="b-save" onclick="createNewUser()">เพิ่มผู้ใช้</button>
+      </div>
+      <div id="userListWrap" style="margin-top:16px;font-size:12.5px;color:var(--sub);line-height:1.7;"></div>
+
+      <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--line);">
+        <h2 style="font-size:14.5px;margin-bottom:2px;">🗑️ ล้างข้อมูลย้อนหลัง</h2>
+        <div class="msub">ใช้เมื่อ Supabase แจ้งเตือนพื้นที่ใกล้เต็มเท่านั้น — ลบแล้วกู้คืนไม่ได้</div>
+        <div id="activityLogStats" style="font-size:12.5px;color:var(--sub);margin:6px 0 10px;">กำลังตรวจสอบจำนวนข้อมูล...</div>
+        <label>ประเภทข้อมูล</label>
+        <select id="cleanupType" onchange="resetCleanupPreview()">
+          <option value="activity_log">บันทึกประวัติแก้ไข/เบิก-เติม (Activity Log)</option>
+          <option value="purchase_requests">คำขอซื้อที่ "รับของแล้ว" เสร็จสมบูรณ์แล้ว</option>
+        </select>
+        <label>ลบข้อมูลที่เก่ากว่าวันที่นี้</label>
+        <input type="date" id="cleanupCutoffDate" onchange="resetCleanupPreview()">
+        <div id="cleanupPreview" style="font-size:12.5px;color:var(--sub);margin-top:8px;min-height:18px;"></div>
+        <div class="mbtns">
+          <button class="b-cancel" style="flex:1;" onclick="previewCleanup()">🔍 ตรวจสอบจำนวนรายการ</button>
+          <button class="b-save" style="flex:1;background:#c0392b;border-color:#c0392b;" id="cleanupDeleteBtn" disabled onclick="runCleanup()">🗑️ ลบข้อมูลถาวร</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="reportOverlay">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-close"><span onclick="closeReportModal()" title="ปิด">✕</span></div>
+      <h2>รายงานการแก้ไข</h2>
+      <div class="msub">สรุปว่าใครแก้ไขอะไรบ้าง</div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label>ช่วงเวลา</label>
+          <select id="reportPeriod" onchange="onReportPeriodChange()">
+            <option value="day">รายวัน</option>
+            <option value="month">รายเดือน</option>
+            <option value="year">รายปี</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label id="reportDateLabel">วันที่</label>
+          <input type="date" id="reportDateDay">
+          <input type="month" id="reportDateMonth" style="display:none;">
+          <input type="number" id="reportDateYear" style="display:none;" min="2020" max="2100">
+        </div>
+      </div>
+      <div class="mbtns" style="margin-top:14px;">
+        <button class="b-save" style="flex:1;" onclick="runReport()">ดูรายงาน</button>
+        <button class="b-cancel" style="flex:1;" onclick="exportReportCSV()">⬇️ ส่งออก CSV</button>
+      </div>
+      <div id="reportSummary" style="font-size:13px;margin-top:12px;line-height:1.7;"></div>
+      <input id="reportFilterBox" type="text" placeholder="กรองด้วยชื่อ/รหัสอะไหล่ หรือชื่อผู้ใช้..." style="display:none;margin-top:8px;" oninput="renderReportList()">
+      <div id="reportList" style="max-height:320px;overflow-y:auto;margin-top:8px;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeReportModal()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="zeroStockOverlay">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-close"><span onclick="closeZeroStockModal()" title="ปิด">✕</span></div>
+      <h2>🚫 สรุปอะไหล่หมดสต็อก</h2>
+      <div class="msub">รายการที่คงเหลือเป็น 0 ในขณะนี้ พร้อมระยะเวลาที่หมด</div>
+      <div class="mbtns" style="margin-top:12px;">
+        <button class="b-save" style="flex:1;" onclick="runZeroStockReport()">🔄 รีเฟรช</button>
+        <button class="b-cancel" style="flex:1;" onclick="exportZeroStockCSV()">⬇️ ส่งออก CSV</button>
+      </div>
+      <div id="zeroStockSummary" style="font-size:13px;margin-top:12px;line-height:1.7;"></div>
+      <div id="zeroStockList" style="max-height:400px;overflow-y:auto;margin-top:8px;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeZeroStockModal()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="purchaseListOverlay">
+    <div class="modal" style="max-width:700px;">
+      <div class="modal-close"><span onclick="closePurchaseListModal()" title="ปิด">✕</span></div>
+      <h2>🛒 คำขอซื้อเครื่องมือ/อะไหล่</h2>
+      <div class="msub">แจ้งอะไหล่ชำรุด แนบรูป พร้อมลิงก์สำหรับสั่งซื้อ และติดตามสถานะ</div>
+      <div class="mbtns" style="margin-top:10px;">
+        <button class="b-save" style="flex:1;" onclick="openPurchaseItemModal(null)">+ เพิ่มคำขอซื้อใหม่</button>
+        <button class="b-cancel" style="flex:1;" onclick="loadPurchaseRequests()">🔄 รีเฟรช</button>
+        <button class="b-cancel" style="flex:1;" onclick="openPurchaseSummaryModal()">📊 สรุปตามช่วงเวลา</button>
+      </div>
+      <div class="cat-bar" id="purchaseFilterBar" style="margin-top:12px;"></div>
+      <div id="purchaseListWrap" style="margin-top:10px;max-height:440px;overflow-y:auto;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closePurchaseListModal()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="purchaseSummaryOverlay">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-close"><span onclick="closePurchaseSummaryModal()" title="ปิด">✕</span></div>
+      <h2>📊 สรุปคำขอซื้อ</h2>
+      <div class="msub">สรุปรายการที่มีการขอซื้อ แยกตามช่วงเวลา</div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label>ช่วงเวลา</label>
+          <select id="purchaseSummaryPeriod" onchange="onPurchaseSummaryPeriodChange()">
+            <option value="day">รายวัน</option>
+            <option value="month">รายเดือน</option>
+            <option value="year">รายปี</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label id="purchaseSummaryDateLabel">วันที่</label>
+          <input type="date" id="purchaseSummaryDateDay">
+          <input type="month" id="purchaseSummaryDateMonth" style="display:none;">
+          <input type="number" id="purchaseSummaryDateYear" style="display:none;" min="2020" max="2100">
+        </div>
+      </div>
+      <div class="mbtns" style="margin-top:14px;">
+        <button class="b-save" style="flex:1;" onclick="runPurchaseSummary()">ดูสรุป</button>
+        <button class="b-cancel" style="flex:1;" onclick="exportPurchaseSummaryCSV()">⬇️ ส่งออก CSV</button>
+      </div>
+      <div id="purchaseSummarySummary" style="font-size:13px;margin-top:12px;line-height:1.7;"></div>
+      <div id="purchaseSummaryList" style="max-height:360px;overflow-y:auto;margin-top:8px;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closePurchaseSummaryModal()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="purchaseItemOverlay">
+    <div class="modal">
+      <div class="modal-close"><span onclick="closePurchaseItemModal()" title="ปิด">✕</span></div>
+      <h2 id="purchaseModalTitle">เพิ่มคำขอซื้อใหม่</h2>
+      <div class="msub" id="purchaseModalSub"></div>
+
+      <label>ภาพอะไหล่ที่ชำรุด</label>
+      <div class="modal-thumb" id="damagedThumb" onclick="openPurchaseImageLightbox('damaged')" style="cursor:zoom-in;height:110px;"></div>
+      <label style="display:inline-block;font-size:12px;color:var(--steel);cursor:pointer;margin:0 0 14px;">
+        📷 แนบ/เปลี่ยนรูปอะไหล่ชำรุด
+        <input type="file" id="damagedImageFile" accept="image/*" style="display:none;" onchange="handlePurchaseImageSelect(event,'damaged')">
+      </label>
+
+      <label>ภาพอะไหล่ใหม่ที่ต้องการซื้อ</label>
+      <div class="modal-thumb" id="newItemThumb" onclick="openPurchaseImageLightbox('newItem')" style="cursor:zoom-in;height:110px;"></div>
+      <label style="display:inline-block;font-size:12px;color:var(--steel);cursor:pointer;margin:0 0 14px;">
+        📷 แนบ/เปลี่ยนรูปอะไหล่ใหม่
+        <input type="file" id="newItemImageFile" accept="image/*" style="display:none;" onchange="handlePurchaseImageSelect(event,'newItem')">
+      </label>
+
+      <label>ชื่ออะไหล่/เครื่องมือที่ขอซื้อ</label>
+      <input type="text" id="purchaseItemName" placeholder="เช่น Solenoid Valve 24V DC">
+
+      <label>อาการชำรุด / เหตุผลที่ขอซื้อ</label>
+      <textarea id="purchaseDamageDesc" rows="3" placeholder="อธิบายอาการชำรุด หรือเหตุผลที่ต้องการซื้อ"></textarea>
+
+      <label>ลิงก์สำหรับสั่งซื้อ</label>
+      <input type="text" id="purchaseLink" placeholder="https://...">
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:10px 12px;background:#f8f9fb;border-radius:8px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:0;cursor:pointer;">
+          <input type="checkbox" id="purchasedCheck" style="width:auto;" onchange="toggleReceivedField()"> ซื้อแล้ว
+        </label>
+        <div id="purchasedMeta" style="font-size:11.5px;color:var(--sub);display:none;"></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:0;cursor:pointer;">
+          <input type="checkbox" id="receivedCheck" style="width:auto;" onchange="toggleReceivedField()"> ผู้ขอได้รับอะไหล่แล้ว
+        </label>
+        <div id="receivedMeta" style="font-size:11.5px;color:var(--sub);display:none;"></div>
+        <div id="receivedLockNote" style="font-size:11px;color:#c0392b;display:none;">🔒 เฉพาะผู้แจ้งขอซื้อรายการนี้หรือผู้ดูแลระบบเท่านั้นที่กดยืนยันรับของได้</div>
+      </div>
+
+      <div id="purchaseRequestedNote" style="font-size:11.5px;color:#888;background:#f8f9fb;padding:6px 10px;border-radius:6px;margin-top:10px;"></div>
+
+      <div id="purchaseModalMsg"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closePurchaseItemModal()">ยกเลิก</button>
+        <button class="b-save" onclick="savePurchaseItem()">บันทึก</button>
+      </div>
+      <div class="mbtns" id="purchaseDeleteWrap" style="display:none;">
+        <button onclick="deletePurchaseItem()" style="width:100%;background:none;border:1px solid var(--red);color:var(--red);">🗑 ลบคำขอนี้</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="imageLightbox" onclick="closeImageLightbox()" style="z-index:50;background:rgba(10,14,18,.88);cursor:zoom-out;">
+    <img id="lightboxImg" src="" style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.5);">
+    <span onclick="closeImageLightbox()" style="position:fixed;top:16px;right:22px;color:#fff;font-size:30px;font-weight:300;cursor:pointer;line-height:1;">✕</span>
+  </div>
+
+  <div class="overlay" id="barcodeLightbox" style="z-index:50;background:rgba(10,14,18,.88);" onclick="closeBarcodeLightbox()">
+    <div class="modal" style="max-width:340px;text-align:center;" onclick="event.stopPropagation()">
+      <div class="modal-close"><span onclick="closeBarcodeLightbox()" title="ปิด">✕</span></div>
+      <div id="barcodeLightboxBox" style="background:#fff;padding:14px;border-radius:8px;"></div>
+      <div class="mbtns">
+        <button class="b-save" style="flex:1;" onclick="printBarcode()">🖨️ พิมพ์บาร์โค้ด</button>
+        <button class="b-cancel" style="flex:1;" onclick="closeBarcodeLightbox()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="chartsOverlay">
+    <div class="modal" style="max-width:760px;">
+      <div class="modal-close"><span onclick="closeChartsModal()" title="ปิด">✕</span></div>
+      <h2>กราฟเติม/เบิกอะไหล่</h2>
+      <div class="msub">ดูแนวโน้มการเติมและการเบิกอะไหล่ย้อนหลัง</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:140px;">
+          <label>ช่วงเวลา</label>
+          <select id="chartPeriod" onchange="onChartPeriodChange()">
+            <option value="day">รายวัน (ราย 1 เดือน)</option>
+            <option value="month">รายเดือน (ราย 1 ปี)</option>
+            <option value="year">รายปี (ทั้งหมด)</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:140px;">
+          <label id="chartDateLabel">เดือน</label>
+          <input type="month" id="chartDateMonth">
+          <input type="number" id="chartDateYear" style="display:none;" min="2020" max="2100">
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="b-save" onclick="runCharts()" style="padding:10px 16px;">ดูกราฟ</button>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="margin:0;font-size:14.5px;">🟢 การเติมอะไหล่</h3>
+          <button class="b-cancel" onclick="exportChartCSV('refill')" style="font-size:12px;padding:6px 10px;">⬇️ ส่งออก CSV</button>
+        </div>
+        <div id="refillSummary" style="font-size:12.5px;color:var(--sub);margin:4px 0 8px;"></div>
+        <canvas id="refillChart" height="140"></canvas>
+        <div id="refillBreakdown" style="margin-top:10px;"></div>
+      </div>
+
+      <div style="margin-top:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="margin:0;font-size:14.5px;">🔴 การเบิกอะไหล่</h3>
+          <button class="b-cancel" onclick="exportChartCSV('withdraw')" style="font-size:12px;padding:6px 10px;">⬇️ ส่งออก CSV</button>
+        </div>
+        <div id="withdrawSummary" style="font-size:12.5px;color:var(--sub);margin:4px 0 8px;"></div>
+        <canvas id="withdrawChart" height="140"></canvas>
+        <div id="withdrawBreakdown" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeChartsModal()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="scannerOverlay">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-close"><span onclick="closeBarcodeScanner()" title="ปิด">✕</span></div>
+      <h2>สแกนบาร์โค้ด</h2>
+      <div class="msub">เล็งกล้องไปที่บาร์โค้ดของอะไหล่</div>
+      <div id="barcodeReader" style="width:100%;margin-top:10px;border-radius:10px;overflow:hidden;"></div>
+      <div id="scanMsg" style="font-size:13px;margin-top:10px;min-height:18px;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" style="flex:1;" onclick="closeBarcodeScanner()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-tag">
+    <span><b>บันทึกจริง</b> — ข้อมูลถูกเก็บไว้บน Supabase ทุกเครื่องที่เปิดไฟล์นี้เห็นข้อมูลชุดเดียวกัน</span>
+    <span id="syncStatus">กำลังโหลด...</span>
+  </div>
+
+  <div style="max-width:960px;margin:10px auto 0 auto;display:flex;justify-content:flex-end;gap:8px;align-items:center;font-size:13px;padding:0 20px;flex-wrap:wrap;">
+    <span id="userGreeting" style="color:var(--sub);"></span>
+    <button onclick="openReportModal()" style="padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12.5px;">📊 รายงาน</button>
+    <button onclick="openChartsModal()" style="padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12.5px;">📈 กราฟเติม/เบิก</button>
+    <button onclick="openZeroStockModal()" style="padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12.5px;">🚫 อะไหล่หมด</button>
+    <button onclick="openPurchaseListModal()" style="padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12.5px;">🛒 ขอซื้อเครื่องมือ</button>
+    <button id="manageUsersBtn" onclick="openAdminPanel()" style="display:none;padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12.5px;">👤 จัดการผู้ใช้</button>
+    <button onclick="doLogout()" style="padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12.5px;">ออกจากระบบ</button>
+  </div>
+
+  <div id="onlineUsersBar" style="max-width:960px;margin:6px auto 0 auto;padding:0 20px;font-size:12.5px;color:var(--sub);"></div>
+
+  <div id="cleanupReminderBar" style="display:none;max-width:960px;margin:6px auto 0 auto;padding:10px 14px;border-radius:8px;background:#fdf3e3;border:1px solid #f0d9a8;color:#8a5a10;font-size:12.5px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+    <span id="cleanupReminderText"></span>
+    <span style="display:flex;gap:8px;flex-shrink:0;">
+      <button onclick="openAdminPanel()" style="padding:5px 10px;border-radius:6px;border:1px solid #d9a441;background:#fff;color:#8a5a10;cursor:pointer;font-size:12px;">ไปที่หน้าล้างข้อมูล</button>
+      <button onclick="dismissCleanupReminder()" style="padding:5px 10px;border-radius:6px;border:1px solid #d9a441;background:transparent;color:#8a5a10;cursor:pointer;font-size:12px;">ปิด (7 วัน)</button>
+    </span>
+  </div>
+
+  <header class="top">
+    <div class="eyebrow">ร้านค้า / คลังอะไหล่</div>
+    <h1>เช็คสตอคอะไหล่</h1>
+    <div class="sub-line">แตะการ์ดเพื่ออัปเดตยอดคงเหลือหรือเบิกอะไหล่</div>
+  </header>
+
+  <div class="room-tabs" id="roomTabs"></div>
+
+  <div class="sticky-toolbar-wrap" id="stickyToolbarWrap">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input id="searchBox" type="text" placeholder="ค้นหาอะไหล่ (ชื่อ, รุ่น, แบรนด์ หรือ รหัส)...">
+        <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearchBox()" title="ล้างคำค้นหา">✕</button>
+      </div>
+      <button id="scanBtn" onclick="openBarcodeScanner()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13px;">📷 สแกนบาร์โค้ด</button>
+      <button id="refreshBtn" onclick="reloadFromStorage()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13px;">🔄 รีเฟรชข้อมูล</button>
+      <button id="tableViewBtn" onclick="showTableView()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13px;">📋 ดูตารางทั้งหมด</button>
+    </div>
+  </div>
+  <div class="cat-bar" id="catBar" style="max-width:960px;margin:0 auto 16px auto;"></div>
+
+  <div class="grid" id="grid"></div>
+
+  <div id="tableViewWrap" style="display:none;max-width:1100px;margin:0 auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <div>
+        <h2 id="stockTableTitle" style="margin:0 0 2px 0;font-size:17px;">รายการอะไหล่ทั้งหมด (เรียงตามรหัส)</h2>
+        <div class="sub-line" style="margin:0;">แก้ไขค่าคงเหลือในตารางได้ทันที ข้อมูลจะซิงก์กับหน้าการ์ดโดยอัตโนมัติ</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="exportStockTableCSV()" style="padding:9px 14px;border-radius:8px;border:1px solid var(--green);background:#eaf5ee;color:var(--green);cursor:pointer;font-size:13px;font-weight:600;">⬇ ส่งออกเป็น CSV</button>
+        <button onclick="hideTableView()" style="padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13px;">⬅ กลับไปหน้าการ์ด</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);">
+      <table class="stock-table" id="stockTable">
+        <thead>
+          <tr>
+            <th class="sortable" onclick="sortTableBy('code')">รหัส <span class="sort-arrow" id="sortArrow-code"></span></th>
+            <th class="sortable" onclick="sortTableBy('name')">ชื่ออะไหล่ <span class="sort-arrow" id="sortArrow-name"></span></th>
+            <th class="sortable" onclick="sortTableBy('modelBrand')">รุ่น / แบรนด์ <span class="sort-arrow" id="sortArrow-modelBrand"></span></th>
+            <th class="sortable" onclick="sortTableBy('min')">Min – Max <span class="sort-arrow" id="sortArrow-min"></span></th>
+            <th class="sortable" onclick="sortTableBy('qty')">คงเหลือ <span class="sort-arrow" id="sortArrow-qty"></span></th>
+            <th class="sortable" onclick="sortTableBy('status')">สถานะการขอซื้อ <span class="sort-arrow" id="sortArrow-status"></span></th>
+            <th>แก้ไขล่าสุด</th>
+          </tr>
+        </thead>
+        <tbody id="stockTableBody"></tbody>
+      </table>
+    </div>
+    <div id="tablePaginationWrap" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap;">
+      <div class="sub-line" id="tablePageInfo"></div>
+      <div style="display:flex;gap:8px;">
+        <button id="tablePrevBtn" onclick="changeTablePage(-1)" style="padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13px;">← ก่อนหน้า</button>
+        <button id="tableNextBtn" onclick="changeTablePage(1)" style="padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13px;">ถัดไป →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal" id="itemModal">
+      <div class="modal-close"><span onclick="closeModal()" title="ปิด">✕</span></div>
+      <div class="modal-thumb" id="modalThumb" onclick="openImageLightbox()" style="cursor:zoom-in;"></div>
+      <label style="display:inline-block;font-size:12px;color:var(--steel);cursor:pointer;margin-bottom:8px;">
+        📷 เปลี่ยน/เพิ่มรูปภาพ
+        <input type="file" id="mImageFile" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
+      </label>
+      <div class="msub" id="modalCode"></div>
+
+      <label>ชื่ออะไหล่</label>
+      <input type="text" id="mName">
+
+      <label>รุ่น (Model)</label>
+      <input type="text" id="mModel" placeholder="เช่น D-C73L" oninput="checkModelDuplicate();">
+      <div id="modelDupNote" style="font-size:11px;color:#c0392b;margin-top:3px;display:none;">⚠ รุ่นนี้ถูกใช้กับอะไหล่ชิ้นอื่นในห้องนี้แล้ว</div>
+
+      <label>แบรนด์</label>
+      <input type="text" id="mBrand" placeholder="เช่น SMC, Omron">
+
+      <label>รหัสสินค้า</label>
+      <div class="code-row">
+        <div class="code-input-col">
+          <input type="text" id="mCode" placeholder="เช่น SOL-024-A" oninput="renderBarcode(); checkCodeDuplicate();">
+          <div id="codeLockNote" style="font-size:11px;color:#c0392b;margin-top:3px;display:none;">🔒 แก้ไขรหัสสินค้าได้เฉพาะผู้ดูแลระบบ</div>
+          <div id="codeDupNote" style="font-size:11px;color:#c0392b;margin-top:3px;display:none;">⚠ รหัสนี้ถูกใช้กับอะไหล่ชิ้นอื่นแล้ว</div>
+        </div>
+        <div class="barcode-box" id="barcodeBox" onclick="openBarcodeLightbox()" style="cursor:zoom-in;">
+          <span class="bc-empty">ยังไม่มีรหัส</span>
+        </div>
+      </div>
+
+      <label>หมวดหมู่</label>
+      <select id="mCategory"></select>
+
+      <label>ห้องจัดเก็บ</label>
+      <select id="mLocation">
+        <option value="MTG2A">MTG2A</option>
+        <option value="MTG2B">MTG2B</option>
+      </select>
+
+      <label>ตำแหน่งจัดเก็บ</label>
+      <input type="text" id="mStorageSpot" placeholder="เช่น ชั้น A3, ตู้ 2 ช่อง 5">
+
+      <label>ขนาด (มม.)</label>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--sub);margin-bottom:2px;">กว้าง (W)</label>
+          <input type="number" id="mWidth" min="0" step="any" placeholder="mm">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--sub);margin-bottom:2px;">ยาว (L)</label>
+          <input type="number" id="mLength" min="0" step="any" placeholder="mm">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--sub);margin-bottom:2px;">สูง (H)</label>
+          <input type="number" id="mHeight" min="0" step="any" placeholder="mm">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label>Min</label>
+          <input type="number" id="mMin" min="0">
+        </div>
+        <div style="flex:1;">
+          <label>Max</label>
+          <input type="number" id="mMax" min="0" placeholder="ไม่จำกัด (ปล่อยว่างได้)">
+        </div>
+      </div>
+
+      <div class="mode-toggle" id="modeToggleWrap">
+        <div class="mode-btn set active" id="modeBtnSet" onclick="setMode('set')">ตั้งยอดคงเหลือ</div>
+        <div class="mode-btn withdraw" id="modeBtnWithdraw" onclick="setMode('withdraw')">เบิกอะไหล่</div>
+      </div>
+
+      <div id="setWrap">
+        <label id="setQtyLabel">จำนวนคงเหลือวันนี้</label>
+        <input type="number" id="mQty" min="0">
+      </div>
+
+      <div id="withdrawWrap" style="display:none;">
+        <label>จำนวนที่เบิก</label>
+        <input type="number" id="mWithdrawQty" min="0" placeholder="0" oninput="updateWithdrawPreview()">
+        <div class="withdraw-preview" id="withdrawPreview"></div>
+      </div>
+
+      <label>สถานะการขอซื้อ</label>
+      <select id="mStatus">
+        <option>ยังไม่ขอซื้อ</option>
+        <option>อยู่ระหว่างขอซื้อ (PR)</option>
+        <option>สั่งซื้อแล้ว (PO)</option>
+        <option>ของมาแล้ว</option>
+      </select>
+
+      <div id="mPoWrap" style="display:none;">
+        <label>เลขที่ PR/PO</label>
+        <input type="text" id="mPoNumber" placeholder="เช่น PO-2026-045">
+      </div>
+
+      <div id="lastEditNote" style="font-size:11.5px;color:#888;background:#f8f9fb;padding:6px 10px;border-radius:6px;margin-top:10px;"></div>
+
+      <div id="modalMsg"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeModal()">ยกเลิก</button>
+        <button class="b-save" id="saveBtn" onclick="saveModal()">บันทึก</button>
+      </div>
+      <div class="mbtns" id="deleteBtnWrap" style="display:none;">
+        <button id="deleteBtn" onclick="deletePart()" style="width:100%;background:none;border:1px solid var(--red);color:var(--red);">🗑 ลบอะไหล่ชิ้นนี้</button>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<script>
+  const SUPABASE_URL = 'https://igkqkovgxnywmfidnndk.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlna3Frb3ZneG55d21maWRubmRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NTU3NjQsImV4cCI6MjEwMTMzMTc2NH0.RTRWVFdpNAuANzMtA6APhD1fOlUZrFAnLGTgqRq2Zn4';
+
+  // ป้องกันหน้าเว็บ "ค้าง" แบบไม่มีข้อความ ถ้าโหลดไลบรารีจาก CDN ไม่สำเร็จ
+  // (พบบ่อยบนแท็บเล็ต/เน็ตช้า/เน็ตที่บล็อก CDN) — ถ้าไม่มีบรรทัดนี้ ทั้งสคริปต์ทั้งไฟล์
+  // จะพังเงียบๆ ตั้งแต่บรรทัดถัดไป และปุ่ม "เข้าสู่ระบบ" จะกดไม่ได้ผลอะไรเลย
+  let supabaseClient = null;
+  let libraryLoadError = false;
+  try{
+    if(typeof supabase === 'undefined'){ throw new Error('supabase-js library not loaded'); }
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }catch(e){
+    console.error('โหลดไลบรารี Supabase ไม่สำเร็จ', e);
+    libraryLoadError = true;
+  }
+  const IMAGE_BUCKET = 'part-images';
+
+  // ดึง path ของไฟล์ใน Storage จาก public URL เพื่อใช้ลบไฟล์เก่าทิ้ง
+  function storagePathFromUrl(url){
+    if(!url) return null;
+    const marker = `/object/public/${IMAGE_BUCKET}/`;
+    const idx = url.indexOf(marker);
+    if(idx === -1) return null;
+    try{ return decodeURIComponent(url.slice(idx + marker.length)); }
+    catch(e){ return url.slice(idx + marker.length); }
+  }
+  // ลบไฟล์รูปเก่าออกจาก Storage แบบไม่บล็อกการทำงานหลัก (ถ้าลบไม่สำเร็จแค่ log ไว้เฉยๆ)
+  async function deleteStorageImage(url){
+    const path = storagePathFromUrl(url);
+    if(!path) return;
+    try{
+      const { error } = await supabaseClient.storage.from(IMAGE_BUCKET).remove([path]);
+      if(error) console.error('ลบไฟล์รูปเก่าไม่สำเร็จ', error);
+    }catch(e){
+      console.error('ลบไฟล์รูปเก่าไม่สำเร็จ', e);
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    if(libraryLoadError){
+      const msg = document.getElementById('loginMsg');
+      if(msg){
+        msg.innerHTML = '⚠ โหลดระบบไม่สำเร็จ (อินเทอร์เน็ตช้าหรือถูกบล็อก)<br>กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่<br><button onclick="location.reload()" style="margin-top:8px;padding:8px 14px;border-radius:7px;border:none;background:var(--steel-dark);color:#fff;cursor:pointer;">โหลดหน้าใหม่</button>';
+        msg.style.color = '#c0392b';
+      }
+      const btn = document.querySelector('#loginOverlay .b-save');
+      if(btn) btn.disabled = true;
+      return;
+    }
+    // ถ้ามีเซสชันที่ยังไม่หมดอายุ (ใช้งานล่าสุดไม่เกิน 30 นาที) ให้เข้าระบบต่อเลยโดยไม่ต้องล็อกอินใหม่
+    const savedUser = loadSession();
+    if(savedUser){
+      enterAppUI(savedUser);
+    }else{
+      clearSession();
+    }
+  });
+
+  // เรียก RPC พร้อม timeout กันกรณีเชื่อมต่อ Supabase ได้แต่ค้างไม่ตอบ (จะได้ไม่ค้างเฉยๆ)
+  function withTimeout(promise, ms, timeoutMsg){
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(timeoutMsg || 'timeout')), ms))
+    ]);
+  }
+
+  // ---------- คงสถานะการล็อกอินไว้ข้ามการรีเฟรช + ออกจากระบบอัตโนมัติเมื่อไม่มีการใช้งาน 30 นาที ----------
+  const SESSION_KEY = 'stockcheck_session_v1';
+  const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 นาที
+  let inactivityTimer = null;
+  let lastActivitySavedAt = 0;
+
+  function saveSession(user){
+    try{
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ user: user, lastActivity: Date.now() }));
+    }catch(e){ /* localStorage อาจถูกปิดในบางเบราว์เซอร์/โหมด private ก็ปล่อยผ่านได้ */ }
+  }
+
+  function loadSession(){
+    try{
+      const raw = localStorage.getItem(SESSION_KEY);
+      if(!raw) return null;
+      const parsed = JSON.parse(raw);
+      if(!parsed || !parsed.user || !parsed.lastActivity) return null;
+      if(Date.now() - parsed.lastActivity > SESSION_TIMEOUT_MS) return null; // หมดเวลาแล้ว
+      return parsed.user;
+    }catch(e){ return null; }
+  }
+
+  function clearSession(){
+    try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+  }
+
+  function resetInactivityTimer(){
+    if(inactivityTimer) clearTimeout(inactivityTimer);
+    if(!currentUser) return;
+    inactivityTimer = setTimeout(() => { doLogout(true); }, SESSION_TIMEOUT_MS);
+  }
+
+  // เรียกทุกครั้งที่มีการโต้ตอบกับหน้าเว็บ เพื่อ "ต่ออายุ" เซสชันและรีเซ็ตตัวจับเวลา
+  function markActivity(){
+    if(!currentUser) return;
+    const now = Date.now();
+    if(now - lastActivitySavedAt < 10000) return; // จำกัดไม่ให้เขียน localStorage ถี่เกินไป (ทุก 10 วิ)
+    lastActivitySavedAt = now;
+    saveSession(currentUser);
+    resetInactivityTimer();
+  }
+
+  ['click','mousemove','keydown','touchstart','scroll'].forEach(evt => {
+    window.addEventListener(evt, markActivity, { passive: true });
+  });
+
+  function enterAppUI(user){
+    currentUser = user;
+    document.getElementById('loginOverlay').classList.remove('show');
+    document.getElementById('userGreeting').textContent = `👋 ${currentUser.displayName} (${currentUser.role==='admin'?'ผู้ดูแลระบบ':'ผู้ใช้งาน'})`;
+    document.getElementById('manageUsersBtn').style.display = currentUser.role==='admin' ? 'inline-block' : 'none';
+    lastActivitySavedAt = Date.now();
+    saveSession(currentUser);
+    resetInactivityTimer();
+    initApp();
+    initPresence();
+    checkCleanupReminder();
+  }
+  // -----------------------------------------------------------------------------------------------
+
+  // ---------- แจ้งเตือนอัตโนมัติเมื่อข้อมูลสะสมเก่าเยอะเกินไป (เฉพาะผู้ดูแลระบบ) ----------
+  const CLEANUP_REMINDER_THRESHOLD = 3000; // activity_log: จำนวนรายการเก่ากว่า 1 ปี ที่เริ่มแจ้งเตือน
+  const CLEANUP_REMINDER_THRESHOLD_PR = 1000; // purchase_requests (รับของแล้ว): จำนวนรายการเก่ากว่า 1 ปี ที่เริ่มแจ้งเตือน
+  const CLEANUP_REMINDER_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000; // ปิดแล้วจะไม่เตือนซ้ำ 7 วัน
+  const CLEANUP_REMINDER_DISMISS_KEY = 'cleanupReminderDismissedAt';
+
+  async function checkCleanupReminder(){
+    if(!currentUser || currentUser.role !== 'admin') return; // เตือนเฉพาะผู้ดูแลระบบ ผู้ใช้งานทั่วไปแก้ไขข้อมูลนี้ไม่ได้
+    try{
+      const dismissedAt = Number(localStorage.getItem(CLEANUP_REMINDER_DISMISS_KEY) || 0);
+      if(dismissedAt && (Date.now() - dismissedAt) < CLEANUP_REMINDER_SNOOZE_MS) return; // เพิ่งปิดไปเมื่อไม่นานนี้
+
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const [{ count: alOld, error: e1 }, { count: prOld, error: e2 }] = await Promise.all([
+        supabaseClient.from('activity_log').select('*', { count:'exact', head:true }).lt('created_at', oneYearAgo.toISOString()),
+        supabaseClient.from('purchase_requests').select('*', { count:'exact', head:true }).eq('received', true).lt('created_at', oneYearAgo.toISOString())
+      ]);
+      if(e1 || e2) throw (e1 || e2);
+      const alOldCount = alOld || 0;
+      const prOldCount = prOld || 0;
+      const alOver = alOldCount >= CLEANUP_REMINDER_THRESHOLD;
+      const prOver = prOldCount >= CLEANUP_REMINDER_THRESHOLD_PR;
+      if(!alOver && !prOver) return;
+
+      const parts2 = [];
+      if(alOver) parts2.push(`บันทึกประวัติแก้ไข/เบิก-เติม <b>${alOldCount.toLocaleString('th-TH')}</b> รายการ`);
+      if(prOver) parts2.push(`คำขอซื้อที่รับของแล้ว <b>${prOldCount.toLocaleString('th-TH')}</b> รายการ`);
+      document.getElementById('cleanupReminderText').innerHTML =
+        `🗑️ มีข้อมูลเก่ากว่า 1 ปีสะสมอยู่ — ${parts2.join(' และ ')} — แนะนำให้เข้าไปล้างข้อมูลเก่าเพื่อไม่ให้ฐานข้อมูลโตเกินจำเป็น`;
+      document.getElementById('cleanupReminderBar').style.display = 'flex';
+    }catch(e){
+      console.error('ตรวจสอบข้อมูลเพื่อแจ้งเตือนไม่สำเร็จ', e);
+    }
+  }
+
+  function dismissCleanupReminder(){
+    localStorage.setItem(CLEANUP_REMINDER_DISMISS_KEY, String(Date.now()));
+    document.getElementById('cleanupReminderBar').style.display = 'none';
+  }
+
+  // ---------- แสดงว่ามีผู้ใช้คนไหนกำลังใช้งานอยู่ตอนนี้บ้าง (Supabase Realtime Presence) ----------
+  let presenceChannel = null;
+
+  function initPresence(){
+    if(!supabaseClient || !currentUser) return;
+    stopPresence();
+    presenceChannel = supabaseClient.channel('stockcheck-online-users', {
+      config: { presence: { key: currentUser.username } }
+    });
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        renderOnlineUsers(presenceChannel.presenceState());
+      })
+      .subscribe(async (status) => {
+        if(status === 'SUBSCRIBED'){
+          try{
+            await presenceChannel.track({
+              displayName: currentUser.displayName,
+              role: currentUser.role,
+              online_at: new Date().toISOString()
+            });
+          }catch(e){ console.error('ติดตามสถานะออนไลน์ไม่สำเร็จ', e); }
+        }
+      });
+  }
+
+  function renderOnlineUsers(state){
+    const bar = document.getElementById('onlineUsersBar');
+    if(!bar) return;
+    const names = Object.values(state || {})
+      .map(entries => entries && entries[0])
+      .filter(Boolean)
+      .map(e => e.displayName || 'ผู้ใช้')
+      .sort((a,b)=>a.localeCompare(b,'th'));
+    bar.textContent = names.length ? `🟢 กำลังใช้งานอยู่ (${names.length}): ${names.join(', ')}` : '';
+  }
+
+  function stopPresence(){
+    if(presenceChannel){
+      try{ presenceChannel.untrack(); supabaseClient.removeChannel(presenceChannel); }catch(e){}
+      presenceChannel = null;
+    }
+    const bar = document.getElementById('onlineUsersBar');
+    if(bar) bar.textContent = '';
+  }
+  window.addEventListener('beforeunload', stopPresence);
+  // -----------------------------------------------------------------------------------------------
+
+  let currentUser = null; // {username, displayName, role, password}
+
+  async function doLogin(){
+    const u = document.getElementById('loginUsername').value.trim();
+    const pw = document.getElementById('loginPassword').value;
+    const msg = document.getElementById('loginMsg');
+    if(!u || !pw){ msg.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'; msg.style.color = '#c0392b'; return; }
+    if(!supabaseClient){
+      msg.textContent = '⚠ ระบบยังไม่พร้อม กรุณาโหลดหน้าใหม่หรือตรวจสอบอินเทอร์เน็ต';
+      msg.style.color = '#c0392b';
+      return;
+    }
+    msg.textContent = 'กำลังตรวจสอบ...'; msg.style.color = '#888';
+    try{
+      const { data, error } = await withTimeout(
+        supabaseClient.rpc('login_user', { p_username: u, p_password: pw }),
+        15000,
+        'login timeout'
+      );
+      if(error) throw error;
+      if(!data || !data.length){
+        msg.textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+        msg.style.color = '#c0392b';
+        return;
+      }
+      const row = data[0];
+      const user = { username: row.username, displayName: row.display_name, role: row.role, password: pw };
+      enterAppUI(user);
+    }catch(e){
+      console.error('เข้าสู่ระบบไม่สำเร็จ', e);
+      msg.textContent = e && e.message === 'login timeout'
+        ? '⚠ เชื่อมต่อช้าเกินไป ตรวจสอบสัญญาณอินเทอร์เน็ตแล้วลองใหม่'
+        : '⚠ เชื่อมต่อไม่สำเร็จ ตรวจสอบการตั้งค่า Supabase';
+      msg.style.color = '#c0392b';
+    }
+  }
+
+  function doLogout(dueToTimeout){
+    currentUser = null;
+    clearSession();
+    stopPresence();
+    if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer = null; }
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+    const msg = document.getElementById('loginMsg');
+    msg.textContent = dueToTimeout === true ? '⏰ ออกจากระบบอัตโนมัติเนื่องจากไม่มีการใช้งานเกิน 30 นาที กรุณาเข้าสู่ระบบใหม่' : '';
+    msg.style.color = dueToTimeout === true ? '#c0392b' : '#888';
+    document.getElementById('loginOverlay').classList.add('show');
+  }
+
+  // ===== Cache สำหรับ query ที่ดึงจาก activity_log (รายงาน/กราฟ/อะไหล่หมดสต็อก) =====
+  // ถ้าเปิดหน้าต่างเดิมซ้ำ หรือช่วงเวลาเดิมซ้ำ ภายใน 3 นาที จะใช้ข้อมูลที่ cache ไว้แทนการยิง query ใหม่
+  // และจะถูกล้างทิ้งอัตโนมัติทันทีที่มีการบันทึกกิจกรรมใหม่ (เบิก/เติม/แก้ไข) เพื่อไม่ให้ข้อมูลค้าง
+  const activityQueryCache = new Map();
+  const ACTIVITY_CACHE_TTL_MS = 3 * 60 * 1000; // 3 นาที
+  function activityCacheKey(prefix, params){ return prefix + '::' + JSON.stringify(params); }
+  function getCachedActivityQuery(key){
+    const hit = activityQueryCache.get(key);
+    if(!hit) return null;
+    if(Date.now() - hit.time > ACTIVITY_CACHE_TTL_MS){ activityQueryCache.delete(key); return null; }
+    return hit.data;
+  }
+  function setCachedActivityQuery(key, data){ activityQueryCache.set(key, { data, time: Date.now() }); }
+  function clearActivityQueryCache(){ activityQueryCache.clear(); }
+
+  async function logActivity(action, part, detail, qtyDelta){
+    if(!currentUser) return;
+    try{
+      const { error } = await supabaseClient.from('activity_log').insert({
+        part_code: part ? part.code : null,
+        part_name: part ? part.name : null,
+        action: action,
+        detail: detail || null,
+        username: currentUser.username,
+        display_name: currentUser.displayName,
+        qty_delta: (typeof qtyDelta === 'number' && !isNaN(qtyDelta)) ? qtyDelta : null
+      });
+      if(error) throw error;
+      clearActivityQueryCache();
+    }catch(e){
+      console.error('บันทึกประวัติไม่สำเร็จ', e);
+    }
+  }
+
+  function openAdminPanel(){
+    document.getElementById('newUserUsername').value = '';
+    document.getElementById('newUserDisplayName').value = '';
+    document.getElementById('newUserPassword').value = '';
+    document.getElementById('newUserRole').value = 'user';
+    document.getElementById('adminMsg').textContent = '';
+    document.getElementById('cleanupType').value = 'activity_log';
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    document.getElementById('cleanupCutoffDate').value = oneYearAgo.toISOString().slice(0,10);
+    resetCleanupPreview();
+    loadUserList();
+    loadActivityLogStats();
+    document.getElementById('adminOverlay').classList.add('show');
+  }
+  function closeAdminPanel(){ document.getElementById('adminOverlay').classList.remove('show'); }
+
+  // ตรวจสอบจำนวนข้อมูลสะสมทั้ง activity_log และ purchase_requests (เฉพาะที่ "รับของแล้ว")
+  // เพื่อให้ผู้ดูแลระบบเห็นภาพการเติบโตของข้อมูลทั้งสองตาราง และตัดสินใจได้ว่าควรล้างข้อมูลเก่าหรือยัง
+  async function loadActivityLogStats(){
+    const el = document.getElementById('activityLogStats');
+    el.textContent = 'กำลังตรวจสอบจำนวนข้อมูล...';
+    try{
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const [
+        { count: alTotal, error: e1 },
+        { count: alOld, error: e2 },
+        { count: prTotal, error: e3 },
+        { count: prOld, error: e4 }
+      ] = await Promise.all([
+        supabaseClient.from('activity_log').select('*', { count:'exact', head:true }),
+        supabaseClient.from('activity_log').select('*', { count:'exact', head:true }).lt('created_at', oneYearAgo.toISOString()),
+        supabaseClient.from('purchase_requests').select('*', { count:'exact', head:true }).eq('received', true),
+        supabaseClient.from('purchase_requests').select('*', { count:'exact', head:true }).eq('received', true).lt('created_at', oneYearAgo.toISOString())
+      ]);
+      if(e1 || e2 || e3 || e4) throw (e1 || e2 || e3 || e4);
+      const total = alTotal || 0, old = alOld || 0;
+      const prTotalN = prTotal || 0, prOldN = prOld || 0;
+      const approxKb = Math.round((total + prTotalN) * 0.3); // ประมาณ ~300 ไบต์/แถว
+      let msg = `📊 บันทึกประวัติแก้ไข/เบิก-เติมสะสม <b>${total.toLocaleString('th-TH')}</b> รายการ`;
+      if(old > 0) msg += ` (เก่ากว่า 1 ปี <b>${old.toLocaleString('th-TH')}</b> รายการ)`;
+      msg += `<br>คำขอซื้อที่ "รับของแล้ว" สะสม <b>${prTotalN.toLocaleString('th-TH')}</b> รายการ`;
+      if(prOldN > 0) msg += ` (เก่ากว่า 1 ปี <b>${prOldN.toLocaleString('th-TH')}</b> รายการ)`;
+      msg += `<br><span style="color:var(--sub);">รวมประมาณ ${approxKb.toLocaleString('th-TH')} KB — ข้อมูลที่เก่ากว่า 1 ปีล้างทิ้งได้โดยไม่กระทบข้อมูลปีล่าสุด</span>`;
+      el.innerHTML = msg;
+      el.style.color = (old > 3000 || prOldN > 1000) ? 'var(--amber)' : 'var(--sub)';
+    }catch(e){
+      console.error('ตรวจสอบจำนวนข้อมูลสะสมไม่สำเร็จ', e);
+      el.textContent = '⚠ ตรวจสอบจำนวนข้อมูลไม่สำเร็จ';
+    }
+  }
+
+  // ---------- ล้างข้อมูลย้อนหลัง (เฉพาะ admin กดเองเมื่อพื้นที่ใกล้เต็ม) ----------
+  let cleanupPreviewCount = null;
+  let cleanupPreviewCutoffIso = null;
+  let cleanupPreviewType = null;
+
+  function resetCleanupPreview(){
+    cleanupPreviewCount = null;
+    cleanupPreviewCutoffIso = null;
+    cleanupPreviewType = null;
+    document.getElementById('cleanupPreview').textContent = '';
+    document.getElementById('cleanupDeleteBtn').disabled = true;
+  }
+
+  async function previewCleanup(){
+    const type = document.getElementById('cleanupType').value;
+    const dateVal = document.getElementById('cleanupCutoffDate').value;
+    const previewEl = document.getElementById('cleanupPreview');
+    document.getElementById('cleanupDeleteBtn').disabled = true;
+    if(!dateVal){
+      previewEl.textContent = 'กรุณาเลือกวันที่ก่อน';
+      previewEl.style.color = '#c0392b';
+      return;
+    }
+    const cutoffIso = new Date(dateVal + 'T00:00:00').toISOString();
+    previewEl.textContent = 'กำลังตรวจสอบ...';
+    previewEl.style.color = 'var(--sub)';
+    try{
+      let query = supabaseClient.from(type).select('*', { count:'exact', head:true }).lt('created_at', cutoffIso);
+      if(type === 'purchase_requests') query = query.eq('received', true);
+      const { count, error } = await query;
+      if(error) throw error;
+      cleanupPreviewCount = count || 0;
+      cleanupPreviewCutoffIso = cutoffIso;
+      cleanupPreviewType = type;
+      if(cleanupPreviewCount === 0){
+        previewEl.textContent = 'ไม่พบข้อมูลที่เข้าเงื่อนไขให้ลบ';
+        previewEl.style.color = 'var(--sub)';
+        document.getElementById('cleanupDeleteBtn').disabled = true;
+      } else {
+        const typeLabel = type === 'activity_log' ? 'บันทึกประวัติ' : 'คำขอซื้อที่รับของแล้ว';
+        previewEl.textContent = `พบ ${cleanupPreviewCount} รายการ (${typeLabel}) ที่เก่ากว่า ${new Date(cutoffIso).toLocaleDateString('th-TH')} — กด "ลบข้อมูลถาวร" เพื่อดำเนินการ`;
+        previewEl.style.color = '#c0392b';
+        document.getElementById('cleanupDeleteBtn').disabled = false;
+      }
+    }catch(e){
+      console.error(e);
+      previewEl.textContent = '⚠ ตรวจสอบไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ');
+      previewEl.style.color = '#c0392b';
+    }
+  }
+
+  async function runCleanup(){
+    if(!cleanupPreviewCount || !cleanupPreviewCutoffIso || !cleanupPreviewType){
+      alert('กรุณากด "ตรวจสอบจำนวนรายการ" ก่อน');
+      return;
+    }
+    const typeLabel = cleanupPreviewType === 'activity_log' ? 'บันทึกประวัติแก้ไข/เบิก-เติม' : 'คำขอซื้อที่รับของแล้ว';
+    const confirmed = confirm(`ยืนยันลบ ${typeLabel} จำนวน ${cleanupPreviewCount} รายการ ที่เก่ากว่า ${new Date(cleanupPreviewCutoffIso).toLocaleDateString('th-TH')} ?\n\nการลบนี้ถาวร ไม่สามารถกู้คืนได้`);
+    if(!confirmed) return;
+    const previewEl = document.getElementById('cleanupPreview');
+    previewEl.textContent = 'กำลังลบ...';
+    previewEl.style.color = 'var(--sub)';
+    document.getElementById('cleanupDeleteBtn').disabled = true;
+    try{
+      let query = supabaseClient.from(cleanupPreviewType).delete().lt('created_at', cleanupPreviewCutoffIso);
+      if(cleanupPreviewType === 'purchase_requests') query = query.eq('received', true);
+      const { error } = await query;
+      if(error) throw error;
+      const deletedCount = cleanupPreviewCount;
+      const cutoffLabel = new Date(cleanupPreviewCutoffIso).toLocaleDateString('th-TH');
+      previewEl.textContent = `✅ ลบสำเร็จ ${deletedCount} รายการ (${typeLabel}) ที่เก่ากว่า ${cutoffLabel}`;
+      previewEl.style.color = 'var(--green)';
+      // บันทึกการลบไว้เป็นหลักฐาน (audit) ในบันทึกประวัติ
+      await logActivity('cleanup', null, `ลบ${typeLabel} จำนวน ${deletedCount} รายการ ที่เก่ากว่า ${cutoffLabel}`, null);
+      // ล้างเฉพาะสถานะภายใน ไม่ล้างข้อความสำเร็จที่เพิ่งแสดง
+      cleanupPreviewCount = null;
+      cleanupPreviewCutoffIso = null;
+      cleanupPreviewType = null;
+      document.getElementById('cleanupDeleteBtn').disabled = true;
+      document.getElementById('cleanupCutoffDate').value = '';
+    }catch(e){
+      console.error(e);
+      previewEl.textContent = '⚠ ลบไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ');
+      previewEl.style.color = '#c0392b';
+      document.getElementById('cleanupDeleteBtn').disabled = false;
+    }
+  }
+
+  async function loadUserList(){
+    const wrap = document.getElementById('userListWrap');
+    wrap.textContent = 'กำลังโหลดรายชื่อผู้ใช้...';
+    try{
+      const { data, error } = await supabaseClient.rpc('list_app_users', { p_admin_username: currentUser.username, p_admin_password: currentUser.password });
+      if(error) throw error;
+      if(!data || !data.length){ wrap.textContent = 'ยังไม่มีผู้ใช้ในระบบ'; return; }
+      const sorted = [...data].sort((a,b)=>a.display_name.localeCompare(b.display_name,'th'));
+      wrap.innerHTML = '<b>รายชื่อผู้ใช้ทั้งหมด (' + sorted.length + ' คน)</b>' +
+        '<div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;">' +
+        sorted.map(u => {
+          const isSelf = u.username === currentUser.username;
+          return `
+          <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;">
+            <span>${u.display_name} <span style="color:#999;">(${u.username})</span>${isSelf ? ' <span style="color:#999;">— คุณ</span>' : ''}</span>
+            <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <select id="roleSel_${escapeAttr(u.username)}" ${isSelf ? 'disabled title="ไม่สามารถเปลี่ยนสิทธิ์ตัวเองได้"' : ''} style="font-size:12px;padding:4px 6px;border-radius:6px;">
+                <option value="user" ${u.role==='user'?'selected':''}>ผู้ใช้งานทั่วไป</option>
+                <option value="admin" ${u.role==='admin'?'selected':''}>ผู้ดูแลระบบ</option>
+              </select>
+              <button onclick="updateUserRole('${escapeAttr(u.username)}')" ${isSelf ? 'disabled' : ''} style="font-size:11.5px;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;">บันทึก</button>
+              <button onclick="renameUser('${escapeAttr(u.username)}')" style="font-size:11.5px;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;">เปลี่ยนชื่อผู้ใช้</button>
+              <button onclick="resetUserPassword('${escapeAttr(u.username)}')" style="font-size:11.5px;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;">เปลี่ยนรหัสผ่าน</button>
+              <button onclick="deleteUser('${escapeAttr(u.username)}')" ${isSelf ? 'disabled title="ไม่สามารถลบบัญชีตัวเองได้"' : ''} style="font-size:11.5px;padding:5px 9px;border-radius:6px;border:1px solid var(--red);background:var(--panel);color:var(--red);cursor:pointer;">ลบ</button>
+            </span>
+            <span id="roleMsg_${escapeAttr(u.username)}" style="font-size:11px;width:100%;"></span>
+          </div>`;
+        }).join('') +
+        '</div>';
+    }catch(e){
+      console.error(e);
+      wrap.textContent = '⚠ โหลดรายชื่อผู้ใช้ไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ');
+    }
+  }
+
+  async function updateUserRole(username){
+    const sel = document.getElementById('roleSel_' + username);
+    const msg = document.getElementById('roleMsg_' + username);
+    if(!sel) return;
+    const newRole = sel.value;
+    if(msg){ msg.textContent = 'กำลังบันทึก...'; msg.style.color = '#888'; }
+    try{
+      const { data, error } = await supabaseClient.rpc('update_app_user_role', {
+        p_admin_username: currentUser.username,
+        p_admin_password: currentUser.password,
+        p_target_username: username,
+        p_new_role: newRole
+      });
+      if(error) throw error;
+      if(data === 'ok'){
+        if(msg){ msg.textContent = '✓ บันทึกสิทธิ์แล้ว'; msg.style.color = 'green'; }
+      }else if(data === 'not_found'){
+        if(msg){ msg.textContent = 'ไม่พบผู้ใช้นี้'; msg.style.color = '#c0392b'; }
+      }else{
+        if(msg){ msg.textContent = 'ไม่มีสิทธิ์ดำเนินการ'; msg.style.color = '#c0392b'; }
+      }
+    }catch(e){
+      console.error(e);
+      if(msg){ msg.textContent = '⚠ บันทึกไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ'); msg.style.color = '#c0392b'; }
+    }
+  }
+
+  async function renameUser(username){
+    const msg = document.getElementById('roleMsg_' + username);
+    const newUsername = prompt('ชื่อผู้ใช้ใหม่สำหรับ "' + username + '" (ใช้สำหรับล็อกอิน):', username);
+    if(newUsername === null) return; // ยกเลิก
+    const trimmed = newUsername.trim();
+    if(!trimmed){ if(msg){ msg.textContent = 'กรุณาใส่ชื่อผู้ใช้'; msg.style.color = '#c0392b'; } return; }
+    if(trimmed === username) return;
+    if(msg){ msg.textContent = 'กำลังบันทึก...'; msg.style.color = '#888'; }
+    try{
+      const { data, error } = await supabaseClient.rpc('update_app_user_username', {
+        p_admin_username: currentUser.username,
+        p_admin_password: currentUser.password,
+        p_target_username: username,
+        p_new_username: trimmed
+      });
+      if(error) throw error;
+      if(data === 'ok'){
+        loadUserList();
+      }else if(data === 'username_taken'){
+        if(msg){ msg.textContent = 'ชื่อผู้ใช้นี้ถูกใช้แล้ว'; msg.style.color = '#c0392b'; }
+      }else if(data === 'not_found'){
+        if(msg){ msg.textContent = 'ไม่พบผู้ใช้นี้'; msg.style.color = '#c0392b'; }
+      }else{
+        if(msg){ msg.textContent = 'ไม่มีสิทธิ์ดำเนินการ'; msg.style.color = '#c0392b'; }
+      }
+    }catch(e){
+      console.error(e);
+      if(msg){ msg.textContent = '⚠ บันทึกไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ'); msg.style.color = '#c0392b'; }
+    }
+  }
+
+  async function resetUserPassword(username){
+    const msg = document.getElementById('roleMsg_' + username);
+    const newPassword = prompt('รหัสผ่านใหม่สำหรับ "' + username + '":');
+    if(newPassword === null) return; // ยกเลิก
+    if(!newPassword){ if(msg){ msg.textContent = 'กรุณาใส่รหัสผ่าน'; msg.style.color = '#c0392b'; } return; }
+    if(msg){ msg.textContent = 'กำลังบันทึก...'; msg.style.color = '#888'; }
+    try{
+      const { data, error } = await supabaseClient.rpc('update_app_user_password', {
+        p_admin_username: currentUser.username,
+        p_admin_password: currentUser.password,
+        p_target_username: username,
+        p_new_password: newPassword
+      });
+      if(error) throw error;
+      if(data === 'ok'){
+        if(msg){ msg.textContent = '✓ เปลี่ยนรหัสผ่านแล้ว'; msg.style.color = 'green'; }
+      }else if(data === 'not_found'){
+        if(msg){ msg.textContent = 'ไม่พบผู้ใช้นี้'; msg.style.color = '#c0392b'; }
+      }else{
+        if(msg){ msg.textContent = 'ไม่มีสิทธิ์ดำเนินการ'; msg.style.color = '#c0392b'; }
+      }
+    }catch(e){
+      console.error(e);
+      if(msg){ msg.textContent = '⚠ บันทึกไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ'); msg.style.color = '#c0392b'; }
+    }
+  }
+
+  async function deleteUser(username){
+    if(!confirm('ยืนยันลบผู้ใช้ "' + username + '"? การกระทำนี้ไม่สามารถย้อนกลับได้')) return;
+    const msg = document.getElementById('roleMsg_' + username);
+    if(msg){ msg.textContent = 'กำลังลบ...'; msg.style.color = '#888'; }
+    try{
+      const { data, error } = await supabaseClient.rpc('delete_app_user', {
+        p_admin_username: currentUser.username,
+        p_admin_password: currentUser.password,
+        p_target_username: username
+      });
+      if(error) throw error;
+      if(data === 'ok'){
+        loadUserList();
+      }else if(data === 'not_found'){
+        if(msg){ msg.textContent = 'ไม่พบผู้ใช้นี้'; msg.style.color = '#c0392b'; }
+      }else if(data === 'cannot_delete_self'){
+        if(msg){ msg.textContent = 'ไม่สามารถลบบัญชีตัวเองได้'; msg.style.color = '#c0392b'; }
+      }else{
+        if(msg){ msg.textContent = 'ไม่มีสิทธิ์ดำเนินการ'; msg.style.color = '#c0392b'; }
+      }
+    }catch(e){
+      console.error(e);
+      if(msg){ msg.textContent = '⚠ ลบไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ'); msg.style.color = '#c0392b'; }
+    }
+  }
+
+  async function createNewUser(){
+    const username = document.getElementById('newUserUsername').value.trim();
+    const displayName = document.getElementById('newUserDisplayName').value.trim();
+    const password = document.getElementById('newUserPassword').value;
+    const role = document.getElementById('newUserRole').value;
+    const msg = document.getElementById('adminMsg');
+    if(!username || !displayName || !password){ msg.textContent = 'กรุณากรอกข้อมูลให้ครบ'; msg.style.color = '#c0392b'; return; }
+    msg.textContent = 'กำลังสร้างผู้ใช้...'; msg.style.color = '#888';
+    try{
+      const { data, error } = await supabaseClient.rpc('create_app_user', {
+        p_admin_username: currentUser.username, p_admin_password: currentUser.password,
+        p_new_username: username, p_new_password: password,
+        p_display_name: displayName, p_role: role
+      });
+      if(error) throw error;
+      if(data === 'ok'){
+        msg.textContent = 'เพิ่มผู้ใช้สำเร็จ'; msg.style.color = 'green';
+        loadUserList();
+      } else if(data === 'username_taken'){
+        msg.textContent = 'ชื่อผู้ใช้นี้ถูกใช้แล้ว'; msg.style.color = '#c0392b';
+      } else {
+        msg.textContent = 'ไม่มีสิทธิ์ดำเนินการ'; msg.style.color = '#c0392b';
+      }
+    }catch(e){
+      console.error(e);
+      msg.textContent = '⚠ สร้างผู้ใช้ไม่สำเร็จ'; msg.style.color = '#c0392b';
+    }
+  }
+
+  function onReportPeriodChange(){
+    const period = document.getElementById('reportPeriod').value;
+    document.getElementById('reportDateDay').style.display = period==='day' ? 'block' : 'none';
+    document.getElementById('reportDateMonth').style.display = period==='month' ? 'block' : 'none';
+    document.getElementById('reportDateYear').style.display = period==='year' ? 'block' : 'none';
+    document.getElementById('reportDateLabel').textContent = period==='day' ? 'วันที่' : period==='month' ? 'เดือน' : 'ปี';
+  }
+  function openReportModal(){
+    const today = new Date();
+    document.getElementById('reportPeriod').value = 'day';
+    document.getElementById('reportDateDay').value = today.toISOString().slice(0,10);
+    document.getElementById('reportDateMonth').value = today.toISOString().slice(0,7);
+    document.getElementById('reportDateYear').value = today.getFullYear();
+    onReportPeriodChange();
+    document.getElementById('reportSummary').innerHTML = '';
+    document.getElementById('reportList').innerHTML = '';
+    document.getElementById('reportFilterBox').style.display = 'none';
+    document.getElementById('reportFilterBox').value = '';
+    document.getElementById('reportOverlay').classList.add('show');
+  }
+  function closeReportModal(){ document.getElementById('reportOverlay').classList.remove('show'); }
+
+  let lastReportRows = [];
+  let lastReportLabel = '';
+
+  async function runReport(){
+    const period = document.getElementById('reportPeriod').value;
+    let startDate, endDate, labelText;
+    if(period==='day'){
+      const v = document.getElementById('reportDateDay').value;
+      if(!v) return;
+      startDate = new Date(v + 'T00:00:00');
+      endDate = new Date(startDate); endDate.setDate(endDate.getDate()+1);
+      labelText = 'วันที่ ' + startDate.toLocaleDateString('th-TH');
+    } else if(period==='month'){
+      const v = document.getElementById('reportDateMonth').value;
+      if(!v) return;
+      const parts2 = v.split('-').map(Number);
+      startDate = new Date(parts2[0], parts2[1]-1, 1);
+      endDate = new Date(parts2[0], parts2[1], 1);
+      labelText = 'เดือน ' + startDate.toLocaleDateString('th-TH', {month:'long', year:'numeric'});
+    } else {
+      const y = Number(document.getElementById('reportDateYear').value);
+      if(!y) return;
+      startDate = new Date(y, 0, 1);
+      endDate = new Date(y+1, 0, 1);
+      labelText = 'ปี ' + y;
+    }
+
+    const summaryEl = document.getElementById('reportSummary');
+    const listEl = document.getElementById('reportList');
+    summaryEl.textContent = 'กำลังโหลด...';
+    listEl.innerHTML = '';
+    try{
+      const reportCacheKey = activityCacheKey('report', { start: startDate.toISOString(), end: endDate.toISOString() });
+      let rows = getCachedActivityQuery(reportCacheKey);
+      if(!rows){
+        const { data, error } = await supabaseClient
+          .from('activity_log')
+          .select('*')
+          .gte('created_at', startDate.toISOString())
+          .lt('created_at', endDate.toISOString())
+          .order('created_at', { ascending:false });
+        if(error) throw error;
+        rows = data || [];
+        setCachedActivityQuery(reportCacheKey, rows);
+      }
+      lastReportRows = rows;
+      lastReportLabel = labelText;
+      if(!rows.length){
+        summaryEl.innerHTML = `<b>${labelText}</b> — ไม่มีการแก้ไขในช่วงนี้`;
+        listEl.innerHTML = '';
+        return;
+      }
+      const byUser = {};
+      const byAction = {};
+      rows.forEach(r=>{
+        const uName = r.display_name || r.username;
+        byUser[uName] = (byUser[uName]||0) + 1;
+        byAction[r.action] = (byAction[r.action]||0) + 1;
+      });
+      const userSummary = Object.entries(byUser).map(([u,c])=>`${u}: ${c} ครั้ง`).join(' · ');
+      const actionSummary = Object.entries(byAction).map(([a,c])=>`${a}: ${c}`).join(' · ');
+      summaryEl.innerHTML = `<b>${labelText}</b> — รวม ${rows.length} รายการ<br><span style="color:var(--sub)">${userSummary}</span><br><span style="color:var(--sub)">${actionSummary}</span>`;
+      const filterBox = document.getElementById('reportFilterBox');
+      filterBox.style.display = rows.length > 15 ? 'block' : 'none';
+      renderReportList();
+    }catch(e){
+      console.error(e);
+      summaryEl.textContent = '⚠ โหลดรายงานไม่สำเร็จ';
+    }
+  }
+
+  function reportEntryHtml(r){
+    const t = new Date(r.created_at).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'});
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--line);">
+      <b>${r.display_name||r.username}</b> — ${r.action} ${r.part_code?('· '+r.part_code):''}<br>
+      <span style="color:var(--sub);">${r.detail||''}</span><br>
+      <span style="color:#aaa;font-size:11px;">${t}</span>
+    </div>`;
+  }
+
+  // แสดงรายการรายงาน โดยกรองด้วยคำค้นหา (ถ้ามี) และจัดกลุ่มตามวัน (พับ/กางได้)
+  // เพื่อให้ยังดูง่ายแม้ในเดือน/ปีที่มีการเติม-เบิกบ่อยจนรายการเยอะ
+  function renderReportList(){
+    const listEl = document.getElementById('reportList');
+    const q = document.getElementById('reportFilterBox').value.trim().toLowerCase();
+    const rows = !q ? lastReportRows : lastReportRows.filter(r=>{
+      return (r.part_code||'').toLowerCase().includes(q) ||
+             (r.part_name||'').toLowerCase().includes(q) ||
+             (r.display_name||'').toLowerCase().includes(q) ||
+             (r.username||'').toLowerCase().includes(q) ||
+             (r.action||'').toLowerCase().includes(q) ||
+             (r.detail||'').toLowerCase().includes(q);
+    });
+    if(!rows.length){
+      listEl.innerHTML = `<div style="color:var(--sub);padding:12px 0;text-align:center;">ไม่พบรายการที่ตรงกับคำค้นหา</div>`;
+      return;
+    }
+    const period = document.getElementById('reportPeriod').value;
+    if(period === 'day'){
+      // มุมมองรายวัน มีแค่วันเดียวอยู่แล้ว ไม่ต้องจัดกลุ่มซ้ำ
+      listEl.innerHTML = rows.map(reportEntryHtml).join('');
+      return;
+    }
+    // จัดกลุ่มตามวัน (ข้อมูลเรียงใหม่ไปเก่าอยู่แล้ว จึงไล่สร้างกลุ่มตามลำดับเดิมได้เลย)
+    const groups = [];
+    let curKey = null, curGroup = null;
+    rows.forEach(r=>{
+      const dayKey = new Date(r.created_at).toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'numeric'});
+      if(dayKey !== curKey){
+        curKey = dayKey;
+        curGroup = { key: dayKey, rows: [] };
+        groups.push(curGroup);
+      }
+      curGroup.rows.push(r);
+    });
+    listEl.innerHTML = groups.map((g, idx)=>`
+      <details ${idx===0 ? 'open' : ''} style="border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:6px;">
+        <summary style="cursor:pointer;list-style:none;padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--sub);background:#f8f9fb;display:flex;justify-content:space-between;align-items:center;">
+          <span>${g.key}</span>
+          <span style="font-size:11px;color:var(--steel);">${g.rows.length} รายการ ▾</span>
+        </summary>
+        <div style="padding:0 10px;">${g.rows.map(reportEntryHtml).join('')}</div>
+      </details>`).join('');
+  }
+
+  function exportReportCSV(){
+    if(!lastReportRows.length){ alert('ยังไม่มีข้อมูลรายงาน กรุณากด "ดูรายงาน" ก่อน'); return; }
+    const header = ['วันที่-เวลา','ผู้ใช้','รหัสอะไหล่','ชื่ออะไหล่','การกระทำ','รายละเอียด'];
+    const csvRows = [header.join(',')];
+    lastReportRows.forEach(r=>{
+      const t = new Date(r.created_at).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'});
+      const vals = [t, r.display_name||r.username, r.part_code||'', r.part_name||'', r.action, (r.detail||'')];
+      csvRows.push(vals.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+    });
+    const csvContent = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `รายงาน-${lastReportLabel.replace(/\s+/g,'_')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- สรุปอะไหล่หมดสต็อก ----------
+  let lastZeroStockRows = [];
+
+  function openZeroStockModal(){
+    document.getElementById('zeroStockSummary').innerHTML = '';
+    document.getElementById('zeroStockList').innerHTML = '';
+    document.getElementById('zeroStockOverlay').classList.add('show');
+    runZeroStockReport();
+  }
+  function closeZeroStockModal(){ document.getElementById('zeroStockOverlay').classList.remove('show'); }
+
+  async function runZeroStockReport(){
+    const summaryEl = document.getElementById('zeroStockSummary');
+    const listEl = document.getElementById('zeroStockList');
+    const zeroParts = parts.filter(p => Number(p.qty) === 0);
+    lastZeroStockRows = [];
+
+    if(!zeroParts.length){
+      summaryEl.innerHTML = '✅ ไม่มีอะไหล่ที่หมดสต็อกในขณะนี้';
+      listEl.innerHTML = '';
+      return;
+    }
+
+    summaryEl.textContent = 'กำลังโหลด...';
+    listEl.innerHTML = '';
+
+    // ดึงประวัติการแก้ไขของแต่ละรหัส เพื่อหาวันที่เปลี่ยนแปลงล่าสุด (ใช้ประมาณวันที่เริ่มหมดสต็อก)
+    const codes = zeroParts.map(p=>p.code);
+    const lastChangeByCode = {};
+    try{
+      const zeroCacheKey = activityCacheKey('zero', { codes: [...codes].sort() });
+      let data = getCachedActivityQuery(zeroCacheKey);
+      if(!data){
+        data = await fetchAllRows(() => supabaseClient
+          .from('activity_log')
+          .select('part_code, created_at')
+          .in('part_code', codes)
+          .order('created_at', { ascending:true }));
+        setCachedActivityQuery(zeroCacheKey, data);
+      }
+      (data || []).forEach(r=>{
+        // เรียงจากเก่าไปใหม่แล้วทับค่าเรื่อยๆ ตัวสุดท้ายที่ทับไว้จึงเป็นรายการล่าสุดของรหัสนั้น
+        lastChangeByCode[r.part_code] = r.created_at;
+      });
+    }catch(e){
+      console.error('โหลดประวัติเพื่อคำนวณระยะเวลาหมดสต็อกไม่สำเร็จ', e);
+    }
+
+    const now = new Date();
+    const rows = zeroParts.map(p=>{
+      const lastChange = lastChangeByCode[p.code] ? new Date(lastChangeByCode[p.code]) : null;
+      const days = lastChange ? Math.max(0, Math.floor((now - lastChange) / (1000*60*60*24))) : null;
+      return { part: p, lastChange, days };
+    });
+
+    // เรียงจากหมดสต็อกนานสุดไปน้อยสุด ส่วนรายการที่ไม่ทราบวันที่ (ไม่มีประวัติ) ไว้ท้ายสุด
+    rows.sort((a,b)=>{
+      if(a.days===null && b.days===null) return 0;
+      if(a.days===null) return 1;
+      if(b.days===null) return -1;
+      return b.days - a.days;
+    });
+
+    lastZeroStockRows = rows;
+
+    const roomCounts = {};
+    zeroParts.forEach(p=>{ roomCounts[p.location] = (roomCounts[p.location]||0) + 1; });
+    const roomSummary = Object.entries(roomCounts).map(([r,c])=>`${r}: ${c} รายการ`).join(' · ');
+    summaryEl.innerHTML = `<b>รวม ${zeroParts.length} รายการที่หมดสต็อก</b><br><span style="color:var(--sub)">${roomSummary}</span>`;
+
+    listEl.innerHTML = rows.map(r=>{
+      const p = r.part;
+      const daysText = r.days===null ? 'ไม่ทราบระยะเวลา' : (r.days===0 ? 'หมดวันนี้' : `หมดมาแล้ว ${r.days} วัน`);
+      const daysColor = r.days===null ? '#999' : (r.days>=7 ? 'var(--red)' : (r.days>=3 ? 'var(--amber)' : 'var(--sub)'));
+      const lastChangeText = r.lastChange ? r.lastChange.toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '—';
+      return `<div style="padding:9px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+        <div>
+          <b>${p.name}</b> <span style="color:#999;font-family:var(--mono);font-size:11px;">(${p.code})</span><br>
+          <span style="color:var(--sub);font-size:12px;">${p.category} · ${p.location} · ${p.status}${p.poNumber?(' · '+p.poNumber):''}</span><br>
+          <span style="color:#aaa;font-size:11px;">เปลี่ยนแปลงล่าสุด: ${lastChangeText}</span>
+        </div>
+        <div style="text-align:right;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:12.5px;color:${daysColor};">${daysText}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function exportZeroStockCSV(){
+    if(!lastZeroStockRows.length){ alert('ไม่มีข้อมูลอะไหล่หมดสต็อกให้ส่งออก'); return; }
+    const header = ['รหัสอะไหล่','ชื่ออะไหล่','หมวดหมู่','ห้องจัดเก็บ','สถานะ','เลขที่ PR/PO','เปลี่ยนแปลงล่าสุด','จำนวนวันที่หมด'];
+    const csvRows = [header.join(',')];
+    lastZeroStockRows.forEach(r=>{
+      const p = r.part;
+      const lastChangeText = r.lastChange ? r.lastChange.toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '';
+      const vals = [p.code, p.name, p.category, p.location, p.status, p.poNumber||'', lastChangeText, r.days===null?'ไม่ทราบ':r.days];
+      csvRows.push(vals.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+    });
+    const csvContent = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `อะไหล่หมดสต็อก-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- กราฟเติม/เบิกอะไหล่ ----------
+  let refillChartInstance = null;
+  let withdrawChartInstance = null;
+  let lastRefillAgg = []; // [{label, value}]
+  let lastWithdrawAgg = [];
+  let lastRefillRows = []; // แถวดิบ (มี part_code/part_name) สำหรับตาราง breakdown และ CSV
+  let lastWithdrawRows = [];
+  let lastWithdrawRealAgg = []; // เบิกจริง (กดปุ่มเบิก)
+  let lastWithdrawAdjustAgg = []; // ปรับยอดลดลงผ่านช่อง "ตั้งยอดคงเหลือ"
+
+  function onChartPeriodChange(){
+    const period = document.getElementById('chartPeriod').value;
+    document.getElementById('chartDateMonth').style.display = period==='day' ? 'block' : 'none';
+    document.getElementById('chartDateYear').style.display = period==='month' ? 'block' : 'none';
+    document.getElementById('chartDateLabel').style.display = period==='year' ? 'none' : 'block';
+    document.getElementById('chartDateLabel').textContent = period==='day' ? 'เดือน' : 'ปี';
+  }
+
+  function openChartsModal(){
+    const today = new Date();
+    document.getElementById('chartPeriod').value = 'day';
+    document.getElementById('chartDateMonth').value = today.toISOString().slice(0,7);
+    document.getElementById('chartDateYear').value = today.getFullYear();
+    onChartPeriodChange();
+    document.getElementById('refillSummary').textContent = '';
+    document.getElementById('withdrawSummary').textContent = '';
+    document.getElementById('chartsOverlay').classList.add('show');
+    runCharts();
+  }
+  function closeChartsModal(){ document.getElementById('chartsOverlay').classList.remove('show'); }
+
+  function computeChartRange(){
+    const period = document.getElementById('chartPeriod').value;
+    if(period==='day'){
+      const v = document.getElementById('chartDateMonth').value;
+      if(!v) return null;
+      const parts2 = v.split('-').map(Number);
+      const start = new Date(parts2[0], parts2[1]-1, 1);
+      const end = new Date(parts2[0], parts2[1], 1);
+      const daysInMonth = end.getDate ? null : null;
+      const numDays = new Date(parts2[0], parts2[1], 0).getDate();
+      const buckets = [];
+      for(let d=1; d<=numDays; d++) buckets.push(String(d));
+      return {
+        period, start, end,
+        bucketOf: (dt)=> String(dt.getDate()),
+        buckets,
+        labelText: 'เดือน ' + start.toLocaleDateString('th-TH', {month:'long', year:'numeric'})
+      };
+    } else if(period==='month'){
+      const y = Number(document.getElementById('chartDateYear').value);
+      if(!y) return null;
+      const start = new Date(y, 0, 1);
+      const end = new Date(y+1, 0, 1);
+      const monthNames = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      return {
+        period, start, end,
+        bucketOf: (dt)=> monthNames[dt.getMonth()],
+        buckets: monthNames,
+        labelText: 'ปี ' + y
+      };
+    } else {
+      // รายปี — จำกัดย้อนหลังไว้ที่ 5 ปีล่าสุด (กันไม่ให้ดึงข้อมูลย้อนหลังไม่จำกัดเมื่อประวัติสะสมมากขึ้นเรื่อยๆ)
+      const thisYear = new Date().getFullYear();
+      const earliestYear = thisYear - 4; // ปีปัจจุบัน + ย้อนหลังอีก 4 ปี = 5 ปี
+      const start = new Date(earliestYear, 0, 1);
+      const end = new Date(thisYear + 1, 0, 1);
+      return {
+        period, start, end,
+        bucketOf: (dt)=> String(dt.getFullYear()),
+        buckets: null, // จะสร้างจากข้อมูลจริงภายในช่วงที่จำกัดไว้
+        labelText: `${earliestYear}–${thisYear} (5 ปีล่าสุด)`
+      };
+    }
+  }
+
+  // Supabase (PostgREST) จำกัดผลลัพธ์ไว้ที่ 1,000 แถวต่อคิวรีโดยปริยาย โดยไม่แจ้ง error ใดๆ —
+  // ถ้าดึงแบบครั้งเดียวแล้วข้อมูลเกิน 1,000 แถว ส่วนที่เกินจะถูกตัดทิ้งเงียบๆ ทำให้ยอดสรุป/กราฟผิดพลาดได้
+  // ฟังก์ชันนี้จึงวนดึงทีละหน้า (1,000 แถว/หน้า) จนกว่าจะครบทุกแถวจริงๆ
+  // buildQuery ต้องเป็นฟังก์ชันที่คืนคิวรีตัวใหม่ทุกครั้งที่เรียก (เพราะ query builder ใช้ซ้ำไม่ได้หลังเรียกแล้ว)
+  const SUPABASE_PAGE_SIZE = 1000;
+  async function fetchAllRows(buildQuery){
+    let allRows = [];
+    let from = 0;
+    while(true){
+      const { data, error } = await buildQuery().range(from, from + SUPABASE_PAGE_SIZE - 1);
+      if(error) throw error;
+      const rows = data || [];
+      allRows = allRows.concat(rows);
+      if(rows.length < SUPABASE_PAGE_SIZE) break; // ได้น้อยกว่าขนาดหน้า แปลว่าถึงหน้าสุดท้ายแล้ว
+      from += SUPABASE_PAGE_SIZE;
+    }
+    return allRows;
+  }
+
+  async function fetchActivitySum(actions, range){
+    const cacheKey = activityCacheKey('sum', {
+      actions: [...actions].sort(),
+      start: range.start ? range.start.toISOString() : null,
+      end: range.end ? range.end.toISOString() : null
+    });
+    const cached = getCachedActivityQuery(cacheKey);
+    if(cached) return cached;
+    const result = await fetchAllRows(() => {
+      let query = supabaseClient.from('activity_log')
+        .select('created_at, qty_delta, part_code, part_name, action')
+        .in('action', actions)
+        .order('created_at', { ascending: true });
+      if(range.start) query = query.gte('created_at', range.start.toISOString());
+      if(range.end) query = query.lt('created_at', range.end.toISOString());
+      return query;
+    });
+    setCachedActivityQuery(cacheKey, result);
+    return result;
+  }
+
+  function aggregateRows(rows, range){
+    const sums = {};
+    rows.forEach(r=>{
+      const dt = new Date(r.created_at);
+      const key = range.bucketOf(dt);
+      sums[key] = (sums[key] || 0) + (Number(r.qty_delta) || 0);
+    });
+    let buckets = range.buckets;
+    if(!buckets){
+      buckets = Object.keys(sums).sort((a,b)=>Number(a)-Number(b));
+    }
+    return buckets.map(b => ({ label: b, value: sums[b] || 0 }));
+  }
+
+  // สรุปยอดรวมแยกตามรายการอะไหล่ (ไม่แยกตามช่วงเวลา) เรียงจากมากไปน้อย
+  function aggregateByPart(rows){
+    const sums = {}; // code -> {code, name, total}
+    rows.forEach(r=>{
+      const code = r.part_code || '—';
+      const name = r.part_name || 'ไม่ทราบชื่อ';
+      if(!sums[code]) sums[code] = { code, name, total: 0 };
+      sums[code].total += (Number(r.qty_delta) || 0);
+    });
+    return Object.values(sums).sort((a,b)=>b.total-a.total);
+  }
+
+  const partBreakdownData = {}; // containerId -> รายการที่ aggregate ไว้ทั้งหมด (ไม่ผ่านการกรอง) สำหรับใช้กรองซ้ำตอนพิมพ์ค้นหา
+
+  function renderPartBreakdown(containerId, partAgg){
+    const el = document.getElementById(containerId);
+    const nonZero = partAgg.filter(p=>p.total !== 0);
+    partBreakdownData[containerId] = nonZero;
+    if(!nonZero.length){ el.innerHTML = '<div style="font-size:12.5px;color:var(--sub);">ไม่มีรายการในช่วงนี้</div>'; return; }
+    const showFilter = nonZero.length > 15;
+    el.innerHTML = `<details style="border:1px solid var(--line);border-radius:8px;overflow:hidden;">
+        <summary style="cursor:pointer;list-style:none;padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--sub);background:#f8f9fb;display:flex;justify-content:space-between;align-items:center;">
+          <span>แยกตามรายการอะไหล่ (${nonZero.length} รายการ)</span>
+          <span style="font-size:11px;color:var(--steel);">กดเพื่อดู ▾</span>
+        </summary>
+        ${showFilter ? `<input type="text" placeholder="ค้นหาชื่อ/รหัสอะไหล่..." style="margin:8px 10px 0;width:calc(100% - 20px);" oninput="filterPartBreakdown('${containerId}')" id="${containerId}Filter">` : ''}
+        <div style="max-height:200px;overflow-y:auto;" id="${containerId}List"></div>
+      </details>`;
+    renderPartBreakdownList(containerId, nonZero);
+  }
+
+  function renderPartBreakdownList(containerId, items){
+    const listEl = document.getElementById(containerId + 'List');
+    if(!items.length){
+      listEl.innerHTML = '<div style="font-size:12.5px;color:var(--sub);padding:10px;">ไม่พบรายการที่ตรงกับคำค้นหา</div>';
+      return;
+    }
+    listEl.innerHTML = items.map(p=>`
+        <div style="display:flex;justify-content:space-between;gap:10px;padding:6px 10px;border-top:1px solid var(--line);font-size:12.5px;">
+          <span>${p.name} <span style="color:#999;">(${p.code})</span></span>
+          <span style="font-family:var(--mono);font-weight:700;">${p.total.toLocaleString('th-TH')}</span>
+        </div>`).join('');
+  }
+
+  function filterPartBreakdown(containerId){
+    const q = document.getElementById(containerId + 'Filter').value.trim().toLowerCase();
+    const all = partBreakdownData[containerId] || [];
+    const filtered = !q ? all : all.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
+    renderPartBreakdownList(containerId, filtered);
+  }
+
+  function renderBarChart(canvasId, existingInstanceGetter, agg, color, setInstance, rowsByBucket){
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    const prev = existingInstanceGetter();
+    if(prev) prev.destroy();
+    const instance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: agg.map(a=>a.label),
+        datasets: [{ label: 'จำนวน', data: agg.map(a=>a.value), backgroundColor: color, borderRadius: 4 }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              // แสดงรายชื่ออะไหล่ที่ประกอบเป็นยอดของแท่งนั้นๆ ต่อจากตัวเลขรวม
+              afterBody: function(items){
+                if(!items.length || !rowsByBucket) return '';
+                const label = items[0].label;
+                const parts = aggregateByPart(rowsByBucket[label] || []).filter(p=>p.total !== 0);
+                if(!parts.length) return '';
+                const top = parts.slice(0,6).map(p=>`${p.name} (${p.code}): ${p.total.toLocaleString('th-TH')}`);
+                if(parts.length>6) top.push(`... และอีก ${parts.length-6} รายการ`);
+                return top;
+              }
+            }
+          }
+        },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+    setInstance(instance);
+  }
+
+  function renderGroupedBarChart(canvasId, existingInstanceGetter, series, setInstance){
+    // series: [{label, agg, color, rowsByBucket}] — ทุกตัวใช้ buckets/labels ชุดเดียวกัน
+    // rowsByBucket ของแต่ละ series ต้องเป็นข้อมูลดิบเฉพาะประเภทนั้นๆ เท่านั้น (ไม่ใช้ข้อมูลรวม) ไม่งั้น tooltip จะโชว์รายการซ้ำกันทุกแท่ง
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    const prev = existingInstanceGetter();
+    if(prev) prev.destroy();
+    const labels = series[0] ? series[0].agg.map(a=>a.label) : [];
+    const instance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: series.map(s => ({ label: s.label, data: s.agg.map(a=>a.value), backgroundColor: s.color, borderRadius: 4 }))
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              afterBody: function(items){
+                if(!items.length) return '';
+                const item = items[0];
+                const s = series[item.datasetIndex];
+                if(!s || !s.rowsByBucket) return '';
+                const parts = aggregateByPart(s.rowsByBucket[item.label] || []).filter(p=>p.total !== 0);
+                if(!parts.length) return '';
+                const top = parts.slice(0,6).map(p=>`${p.name} (${p.code}): ${p.total.toLocaleString('th-TH')}`);
+                if(parts.length>6) top.push(`... และอีก ${parts.length-6} รายการ`);
+                return top;
+              }
+            }
+          }
+        },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { stacked: false } }
+      }
+    });
+    setInstance(instance);
+  }
+
+  function groupRowsByBucket(rows, range){
+    const map = {};
+    rows.forEach(r=>{
+      const dt = new Date(r.created_at);
+      const key = range.bucketOf(dt);
+      if(!map[key]) map[key] = [];
+      map[key].push(r);
+    });
+    return map;
+  }
+
+  async function runCharts(){
+    const range = computeChartRange();
+    if(!range) return;
+    const refillSummaryEl = document.getElementById('refillSummary');
+    const withdrawSummaryEl = document.getElementById('withdrawSummary');
+    if(typeof Chart === 'undefined'){
+      const m = '⚠ โหลดไลบรารีกราฟ (Chart.js) ไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต หรือปิด Ad-blocker/นามสกุลบล็อกสคริปต์ แล้วโหลดหน้าใหม่';
+      refillSummaryEl.textContent = m;
+      withdrawSummaryEl.textContent = m;
+      return;
+    }
+    refillSummaryEl.textContent = 'กำลังโหลด...';
+    withdrawSummaryEl.textContent = 'กำลังโหลด...';
+    try{
+      const [refillRows, withdrawRealRows, withdrawAdjustRows] = await Promise.all([
+        fetchActivitySum(['เติมอะไหล่','เพิ่มอะไหล่ใหม่'], range),
+        fetchActivitySum(['เบิกอะไหล่'], range),
+        fetchActivitySum(['ปรับยอดลดลง'], range)
+      ]);
+      const withdrawRows = withdrawRealRows.concat(withdrawAdjustRows);
+      lastRefillRows = refillRows;
+      lastWithdrawRows = withdrawRows;
+      lastRefillAgg = aggregateRows(refillRows, range);
+      lastWithdrawRealAgg = aggregateRows(withdrawRealRows, range);
+      lastWithdrawAdjustAgg = aggregateRows(withdrawAdjustRows, range);
+      lastWithdrawAgg = aggregateRows(withdrawRows, range);
+      const refillTotal = lastRefillAgg.reduce((s,a)=>s+a.value,0);
+      const withdrawRealTotal = lastWithdrawRealAgg.reduce((s,a)=>s+a.value,0);
+      const withdrawAdjustTotal = lastWithdrawAdjustAgg.reduce((s,a)=>s+a.value,0);
+      const withdrawTotal = withdrawRealTotal + withdrawAdjustTotal;
+      refillSummaryEl.textContent = `${range.labelText} — รวมเติม ${refillTotal.toLocaleString('th-TH')} ชิ้น`;
+      withdrawSummaryEl.textContent = `${range.labelText} — รวมเบิก ${withdrawTotal.toLocaleString('th-TH')} ชิ้น (เบิกจริง ${withdrawRealTotal.toLocaleString('th-TH')} + ปรับยอดลด ${withdrawAdjustTotal.toLocaleString('th-TH')})`;
+      const refillByBucket = groupRowsByBucket(refillRows, range);
+      const withdrawRealByBucket = groupRowsByBucket(withdrawRealRows, range);
+      const withdrawAdjustByBucket = groupRowsByBucket(withdrawAdjustRows, range);
+      renderBarChart('refillChart', ()=>refillChartInstance, lastRefillAgg, '#2f7d4f', (i)=>refillChartInstance=i, refillByBucket);
+      renderGroupedBarChart('withdrawChart', ()=>withdrawChartInstance, [
+        { label: 'เบิกอะไหล่ (กดปุ่มเบิก)', agg: lastWithdrawRealAgg, color: '#c23b3b', rowsByBucket: withdrawRealByBucket },
+        { label: 'ปรับยอดลดลง (แก้ยอดคงเหลือ)', agg: lastWithdrawAdjustAgg, color: '#e0a83b', rowsByBucket: withdrawAdjustByBucket }
+      ], (i)=>withdrawChartInstance=i);
+      renderPartBreakdown('refillBreakdown', aggregateByPart(refillRows));
+      renderPartBreakdown('withdrawBreakdown', aggregateByPart(withdrawRows));
+    }catch(e){
+      console.error(e);
+      const errMsg = (e && e.message) ? e.message : 'ไม่ทราบสาเหตุ';
+      const hint = /qty_delta/i.test(errMsg) ? ' (ยังไม่ได้รันไฟล์ add_qty_delta_column.sql ใน Supabase)' : '';
+      refillSummaryEl.textContent = '⚠ โหลดข้อมูลไม่สำเร็จ: ' + errMsg + hint;
+      withdrawSummaryEl.textContent = '⚠ โหลดข้อมูลไม่สำเร็จ: ' + errMsg + hint;
+    }
+  }
+
+  function exportChartCSV(kind){
+    const rows = kind==='refill' ? lastRefillRows : lastWithdrawRows;
+    const label = kind==='refill' ? 'เติมอะไหล่' : 'เบิกอะไหล่';
+    if(!rows.length){ alert('ยังไม่มีข้อมูลกราฟ กรุณากด "ดูกราฟ" ก่อน'); return; }
+    const header = kind==='refill'
+      ? ['วันที่-เวลา','รหัสอะไหล่','ชื่ออะไหล่','จำนวน']
+      : ['วันที่-เวลา','รหัสอะไหล่','ชื่ออะไหล่','จำนวน','ประเภท'];
+    const csvRows = [header.join(',')];
+    // เรียงตามวันที่-เวลา เพื่อให้อ่านง่าย
+    const sorted = [...rows].sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
+    sorted.forEach(r=>{
+      const t = new Date(r.created_at).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'});
+      const vals = kind==='refill'
+        ? [t, r.part_code||'', r.part_name||'', Number(r.qty_delta)||0]
+        : [t, r.part_code||'', r.part_name||'', Number(r.qty_delta)||0, r.action==='ปรับยอดลดลง' ? 'ปรับยอดลดลง' : 'เบิกอะไหล่'];
+      csvRows.push(vals.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+    });
+    const csvContent = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const period = document.getElementById('chartPeriod').value;
+    a.download = `${label}-${period}-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  // -----------------------------------------------------------------------------------------------
+
+
+  function openBarcodeScanner(){
+    document.getElementById('scanMsg').textContent = '';
+    document.getElementById('scannerOverlay').classList.add('show');
+
+    // LINE (และแอปแช็ตอื่นๆ อย่าง Facebook/Instagram/WeChat) เปิดลิงก์ผ่าน webview ของตัวเอง
+    // ซึ่งมักบล็อกสิทธิ์เข้าถึงกล้อง (getUserMedia) ด้วยเหตุผลความปลอดภัยของแพลตฟอร์มเอง
+    // ไม่เกี่ยวกับโค้ดสแกนของเรา — ต้องเปิดผ่านเบราว์เซอร์จริง (Safari/Chrome) เท่านั้นถึงจะใช้กล้องได้
+    if(isInAppBrowser()){
+      showOpenInBrowserPrompt();
+      return;
+    }
+
+    // เคลียร์ instance เก่า (ถ้ามี) และล้างเนื้อหาช่องแสดงกล้องก่อนเปิดใหม่ทุกครั้ง
+    html5QrCode = null;
+    const readerEl = document.getElementById('barcodeReader');
+    if(readerEl) readerEl.innerHTML = '';
+    try{
+      html5QrCode = new Html5Qrcode('barcodeReader');
+      const config = { fps: 10, qrbox: { width: 250, height: 130 } };
+      html5QrCode.start(
+        { facingMode: 'environment' },
+        config,
+        onScanSuccess,
+        () => {} // ignore per-frame scan failures
+      ).catch(err => {
+        console.error('เปิดกล้องไม่สำเร็จ', err);
+        document.getElementById('scanMsg').textContent = '⚠ เปิดกล้องไม่สำเร็จ ตรวจสอบสิทธิ์การเข้าถึงกล้องของเบราว์เซอร์';
+        document.getElementById('scanMsg').style.color = '#c0392b';
+      });
+    }catch(err){
+      console.error('เปิดกล้องไม่สำเร็จ', err);
+      document.getElementById('scanMsg').textContent = '⚠ เปิดกล้องไม่สำเร็จ ตรวจสอบสิทธิ์การเข้าถึงกล้องของเบราว์เซอร์';
+      document.getElementById('scanMsg').style.color = '#c0392b';
+    }
+  }
+
+  // ตรวจจับว่ากำลังเปิดผ่าน webview ของแอปแช็ต (LINE / Facebook / Instagram / WeChat) หรือไม่
+  // webview พวกนี้มักไม่รองรับหรือบล็อกการขอสิทธิ์กล้อง (getUserMedia) ต่างจาก Safari/Chrome ปกติ
+  function isInAppBrowser(){
+    const ua = navigator.userAgent || '';
+    return /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /Instagram/i.test(ua) || /MicroMessenger/i.test(ua);
+  }
+
+  function showOpenInBrowserPrompt(){
+    const readerEl = document.getElementById('barcodeReader');
+    const msgEl = document.getElementById('scanMsg');
+    if(readerEl) readerEl.innerHTML = '';
+    if(msgEl){
+      msgEl.style.color = '#c0392b';
+      msgEl.innerHTML = '⚠ กล้องใช้งานไม่ได้ในเบราว์เซอร์ของแอปแช็ต (เช่น LINE) กรุณากดปุ่มด้านล่างเพื่อเปิดหน้านี้ด้วยเบราว์เซอร์จริงก่อน';
+    }
+    let btn = document.getElementById('openExternalBrowserBtn');
+    if(!btn){
+      btn = document.createElement('button');
+      btn.id = 'openExternalBrowserBtn';
+      btn.textContent = '🌐 เปิดในเบราว์เซอร์';
+      btn.style.cssText = 'margin-top:10px;width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--green);background:#eaf5ee;color:var(--green);cursor:pointer;font-size:13px;font-weight:600;';
+      btn.onclick = openInExternalBrowser;
+      msgEl.insertAdjacentElement('afterend', btn);
+    }
+  }
+
+  function openInExternalBrowser(){
+    const url = new URL(window.location.href);
+    url.searchParams.set('openExternalBrowser', '1'); // พารามิเตอร์พิเศษที่ LINE ใช้เพื่อสั่งเปิดด้วยเบราว์เซอร์เริ่มต้นของเครื่อง
+    window.location.href = url.toString();
+  }
+
+  function closeBarcodeScanner(){
+    // ปิดหน้าต่างทันทีเสมอ ไม่ว่ากล้องจะเปิดสำเร็จหรือไม่
+    document.getElementById('scannerOverlay').classList.remove('show');
+    const extBtn = document.getElementById('openExternalBrowserBtn');
+    if(extBtn) extBtn.remove(); // เคลียร์ปุ่ม "เปิดในเบราว์เซอร์" ถ้ามีค้างจากรอบก่อน
+    if(html5QrCode){
+      try{
+        html5QrCode.stop()
+          .then(()=>{ try{ html5QrCode.clear(); }catch(e){} html5QrCode = null; })
+          .catch(()=>{ html5QrCode = null; });
+      }catch(e){
+        // stop() อาจโยน error ทันที (ไม่ใช่ promise) ถ้ากล้องไม่เคยเริ่มสแกนสำเร็จ
+        html5QrCode = null;
+      }
+    }
+  }
+
+  function onScanSuccess(decodedText){
+    const code = decodedText.trim();
+    const match = parts.find(p => p.code.toLowerCase() === code.toLowerCase());
+    if(!match){
+      const m = document.getElementById('scanMsg');
+      m.textContent = `ไม่พบอะไหล่รหัส "${code}" ในระบบ — ลองสแกนใหม่`;
+      m.style.color = '#c0392b';
+      return;
+    }
+    closeBarcodeScanner();
+    document.getElementById('searchBox').value = match.code;
+    applyFilters();
+    openModal(match.code);
+  }
+
+  function toDbRow(p){
+    return {
+      code: (p.code || '').trim(), category: p.category, name: p.name, model: p.model, brand: p.brand, unit: p.unit,
+      min: p.min, max: p.max, qty: p.qty, status: p.status,
+      po_number: p.poNumber, location: p.location, storage_spot: p.storageSpot,
+      width: p.width, length: p.length, height: p.height,
+      image_url: p.imageUrl, thumb_url: p.thumbUrl, updated_at: p.updatedAt, updated_by: p.updatedBy
+    };
+  }
+  function fromDbRow(r){
+    // .trim() รหัสตั้งแต่ตอนโหลด — ป้องกันไม่ให้ช่องว่างแฝงท้ายรหัส (เช่นจากการอิมพอร์ต Excel)
+    // ทำให้ระบบเข้าใจผิดว่าเป็นรหัสใหม่ตอนบันทึกแก้ไข (ซึ่งจะ insert แถวซ้ำแทนที่จะอัปเดตแถวเดิม)
+    return {
+      code: (r.code || '').trim(), category: r.category, name: r.name, model: r.model, brand: r.brand, unit: r.unit,
+      min: r.min, max: r.max, qty: r.qty, status: r.status,
+      poNumber: r.po_number, location: r.location, storageSpot: r.storage_spot,
+      width: r.width, length: r.length, height: r.height,
+      imageUrl: r.image_url, thumbUrl: r.thumb_url, updatedAt: r.updated_at, updatedBy: r.updated_by
+    };
+  }
+
+  // ไอคอนแบบง่ายต่อหมวดหมู่ (แทนรูปจริง — ของจริงจะดึงรูปจาก Google Drive)
+  const ICONS = {
+    'Solenoid': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="8" width="16" height="8" rx="1.5"/><path d="M8 8V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v3M2 12h2M20 12h2"/></svg>',
+    'Sensor': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>',
+    'Auto Switch': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="9" width="18" height="7" rx="2"/><circle cx="8" cy="12.5" r="1.4" fill="currentColor" stroke="none"/><path d="M13 12.5h5"/></svg>'
+  };
+  const DEFAULT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2-2 2.1-2.1z"/></svg>';
+
+  let parts = [
+    { code:'SOL-024-A', category:'Solenoid', name:'Solenoid Valve 24V DC', unit:'ตัว', min:5, max:20, qty:3, status:'อยู่ระหว่างขอซื้อ (PR)', poNumber:'PR-2026-118', updatedAt:'01/08/2026 09:14', updatedBy:'สมชาย', imageUrl:null, location:'MTG2A' },
+    { code:'SOL-110-B', category:'Solenoid', name:'Solenoid Coil 110V', unit:'ตัว', min:4, max:15, qty:9, status:'ยังไม่ขอซื้อ', poNumber:'', updatedAt:'29/07/2026 14:02', updatedBy:'สมชาย', imageUrl:null, location:'MTG2B' },
+    { code:'SEN-PNP-12', category:'Sensor', name:'Proximity Sensor PNP', unit:'ตัว', min:10, max:40, qty:6, status:'สั่งซื้อแล้ว (PO)', poNumber:'PO-2026-045', updatedAt:'02/08/2026 08:40', updatedBy:'มานะ', imageUrl:null, location:'MTG2A' },
+    { code:'SEN-PHOTO-03', category:'Sensor', name:'Photoelectric Sensor', unit:'ตัว', min:6, max:25, qty:18, status:'ยังไม่ขอซื้อ', poNumber:'', updatedAt:'28/07/2026 11:20', updatedBy:'มานะ', imageUrl:null, location:'MTG2B' },
+    { code:'SEN-TEMP-07', category:'Sensor', name:'Temperature Sensor PT100', unit:'ตัว', min:3, max:12, qty:2, status:'ของมาแล้ว', poNumber:'PO-2026-039', updatedAt:'30/07/2026 16:55', updatedBy:'สมชาย', imageUrl:null, location:'MTG2A' },
+    { code:'ASW-D73L', category:'Auto Switch', name:'Auto Switch D-C73L', unit:'ตัว', min:8, max:30, qty:11, status:'ยังไม่ขอซื้อ', poNumber:'', updatedAt:'27/07/2026 10:05', updatedBy:'วิชัย', imageUrl:null, location:'MTG2B' },
+    { code:'ASW-M9N', category:'Auto Switch', name:'Auto Switch D-M9N', unit:'ตัว', min:8, max:30, qty:4, status:'อยู่ระหว่างขอซื้อ (PR)', poNumber:'PR-2026-121', updatedAt:'02/08/2026 13:30', updatedBy:'วิชัย', imageUrl:null, location:'MTG2A' },
+    { code:'ASW-A93', category:'Auto Switch', name:'Auto Switch D-A93', unit:'ตัว', min:5, max:18, qty:15, status:'ยังไม่ขอซื้อ', poNumber:'', updatedAt:'25/07/2026 09:00', updatedBy:'วิชัย', imageUrl:null, location:'MTG2B' }
+  ];
+
+  let activeCategory = 'ทั้งหมด';
+  let activeRoom = 'MTG2A';
+  let addingCategory = false;
+  let renamingCategory = null;
+  let currentCode = null;
+  let pendingImageDataUrl = null;
+  let pendingImageFile = null;
+  let currentMode = 'set'; // 'set' | 'withdraw'
+
+  function iconFor(p){ return ICONS[p.category] || DEFAULT_ICON; }
+
+  // แปลงไฟล์ HEIC/HEIF (รูปจากกล้อง iPhone ที่เบราว์เซอร์ส่วนใหญ่อ่านไม่ได้โดยตรง) ให้เป็น JPEG ก่อนใช้งาน
+  // ไฟล์ปกติ (JPEG/PNG/WebP ฯลฯ) จะถูกคืนค่ากลับไปเหมือนเดิมโดยไม่แตะต้อง
+  async function ensureBrowserReadableImage(file){
+    const isHeic = /image\/hei[cf]/i.test(file.type || '') || /\.hei[cf]$/i.test(file.name || '');
+    if(!isHeic) return file;
+    try{
+      const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+      const blob = Array.isArray(converted) ? converted[0] : converted;
+      return new File([blob], (file.name || 'photo').replace(/\.hei[cf]$/i, '.jpg'), { type: 'image/jpeg' });
+    }catch(e){
+      console.error('แปลงไฟล์ HEIC เป็น JPEG ไม่สำเร็จ', e);
+      throw new Error('ไม่สามารถแปลงไฟล์ HEIC เป็น JPEG ได้ — ลองเลือกรูปอื่น หรือตั้งกล้องมือถือเป็น "Most Compatible/JPEG" แล้วถ่ายใหม่');
+    }
+  }
+
+  async function handleImageSelect(evt){
+    const file = evt.target.files[0];
+    if(!file) return;
+    const msg = document.getElementById('modalMsg');
+    let readableFile;
+    try{
+      if(msg && (/image\/hei[cf]/i.test(file.type || '') || /\.hei[cf]$/i.test(file.name || ''))){
+        msg.textContent = 'กำลังแปลงไฟล์รูปภาพ...';
+        msg.className = '';
+      }
+      readableFile = await ensureBrowserReadableImage(file);
+    }catch(e){
+      if(msg){ msg.textContent = e.message; msg.className = 'err'; }
+      evt.target.value = '';
+      return;
+    }
+    if(msg && msg.className !== 'err'){ msg.textContent = ''; }
+    pendingImageFile = readableFile;
+    const reader = new FileReader();
+    reader.onload = function(e){
+      pendingImageDataUrl = e.target.result;
+      document.getElementById('modalThumb').innerHTML = `<img src="${pendingImageDataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+    };
+    reader.readAsDataURL(readableFile);
+  }
+
+  // ย่อขนาดรูปก่อนอัปโหลด (กว้าง/สูงไม่เกิน 1000px, JPEG คุณภาพ 80%) เพื่อประหยัดพื้นที่เก็บข้อมูลฟรี
+  async function resizeImageFile(file, maxDim, quality){
+    maxDim = maxDim || 1000; quality = quality || 0.8;
+    const readableFile = await ensureBrowserReadableImage(file);
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = function(e){
+        const img = new Image();
+        img.onerror = function(){ reject(new Error('ไม่สามารถอ่านไฟล์รูปนี้ได้ (รูปแบบไฟล์นี้เบราว์เซอร์ไม่รองรับ) — ลองเลือกไฟล์ JPEG หรือ PNG แทน')); };
+        img.onload = function(){
+          let w = img.width, h = img.height;
+          if(w > maxDim || h > maxDim){
+            if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/jpeg', quality);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(readableFile);
+    });
+  }
+
+  async function uploadPendingImage(code, oldUrl, oldThumbUrl){
+    if(!pendingImageFile) return null;
+    // หมายเหตุ: เดิมฟังก์ชันนี้ดัก error แล้ว "กลืน" ทิ้งเงียบๆ (return null)
+    // ทำให้ saveModal() เข้าใจผิดว่าไม่มีรูปใหม่ที่ต้องอัปเดต แล้วเดินหน้าแสดง
+    // "บันทึกสำเร็จ" ทั้งที่รูปไม่ได้ถูกอัปโหลดจริง — ผู้ใช้จึงเห็นรูปเดิมหลังบันทึกเสมอ
+    // ตอนนี้ให้ throw error ออกไปให้ saveModal() ดักจับและแจ้งเตือนผู้ใช้แทน
+    const blob = await resizeImageFile(pendingImageFile);
+    const path = `${code}-${Date.now()}.jpg`;
+    // cacheControl ตั้งไว้ 1 ปี (31536000 วินาที) เพราะชื่อไฟล์มี timestamp ต่อท้ายอยู่แล้ว (ไฟล์ใหม่ = path ใหม่เสมอ)
+    // จึงแคชยาวๆ ได้อย่างปลอดภัย ไม่มีทางที่ browser จะแคช path เดิมค้างเป็นรูปเก่าผิดๆ
+    const { error } = await supabaseClient.storage.from(IMAGE_BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
+    if(error){ console.error('อัปโหลดรูปภาพไม่สำเร็จ', error); throw error; }
+    const { data } = supabaseClient.storage.from(IMAGE_BUCKET).getPublicUrl(path);
+    if(oldUrl) deleteStorageImage(oldUrl); // ลบรูปเดิมทิ้ง ไม่ต้องรอผลลัพธ์
+
+    // สร้างรูปย่อขนาดเล็ก (300px, คุณภาพต่ำลง) แยกต่างหากสำหรับใช้แสดงบนการ์ดในหน้ารายการ
+    // เพื่อลด egress ให้เหลือแค่เศษเสี้ยวของรูปเต็ม — รูปเต็มยังใช้ตอนซูม/ดูรายละเอียดในโมดัลเหมือนเดิม
+    let thumbUrl = null;
+    try{
+      const thumbBlob = await resizeImageFile(pendingImageFile, 300, 0.6);
+      const thumbPath = `thumb-${code}-${Date.now()}.jpg`;
+      const { error: thumbErr } = await supabaseClient.storage.from(IMAGE_BUCKET).upload(thumbPath, thumbBlob, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
+      if(thumbErr) throw thumbErr;
+      thumbUrl = supabaseClient.storage.from(IMAGE_BUCKET).getPublicUrl(thumbPath).data.publicUrl;
+      if(oldThumbUrl) deleteStorageImage(oldThumbUrl);
+    }catch(e){
+      console.error('สร้างรูปย่อไม่สำเร็จ (จะใช้รูปเต็มแทนบนการ์ดไปก่อน)', e);
+    }
+
+    return { imageUrl: data.publicUrl, thumbUrl: thumbUrl };
+  }
+
+  const STATUS_OPTIONS = ['ยังไม่ขอซื้อ','อยู่ระหว่างขอซื้อ (PR)','สั่งซื้อแล้ว (PO)','ของมาแล้ว'];
+
+  function badgeClass(status){
+    if(status.indexOf('PR')!==-1) return 'pr';
+    if(status.indexOf('PO')!==-1) return 'po';
+    if(status.indexOf('มาแล้ว')!==-1) return 'arrived';
+    return 'none';
+  }
+
+  // ---------- คำขอซื้อเครื่องมือ/อะไหล่ ----------
+  let purchaseRequests = [];
+  let currentPurchaseId = null; // null = คำขอใหม่
+  let pendingDamagedImageFile = null;
+  let pendingNewItemImageFile = null;
+  let purchaseFilter = 'all';
+
+  function fromPurchaseDbRow(r){
+    return {
+      id: r.id, itemName: r.item_name, damageDescription: r.damage_description,
+      purchaseLink: r.purchase_link, damagedImageUrl: r.damaged_image_url, newItemImageUrl: r.new_item_image_url,
+      purchased: !!r.purchased, purchasedAt: r.purchased_at, purchasedBy: r.purchased_by,
+      received: !!r.received, receivedAt: r.received_at, receivedBy: r.received_by,
+      requestedBy: r.requested_by, requestedByDisplay: r.requested_by_display,
+      createdAt: r.created_at
+    };
+  }
+  function toPurchaseDbRow(p){
+    return {
+      item_name: p.itemName, damage_description: p.damageDescription, purchase_link: p.purchaseLink,
+      damaged_image_url: p.damagedImageUrl, new_item_image_url: p.newItemImageUrl,
+      purchased: p.purchased, purchased_at: p.purchasedAt, purchased_by: p.purchasedBy,
+      received: p.received, received_at: p.receivedAt, received_by: p.receivedBy,
+      requested_by: p.requestedBy, requested_by_display: p.requestedByDisplay,
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  function purchaseStatusOf(p){
+    if(p.received) return 'received';
+    if(p.purchased) return 'purchased';
+    return 'pending';
+  }
+  function purchaseStatusBadge(p){
+    const s = purchaseStatusOf(p);
+    if(s==='received') return `<span class="badge arrived">รับของแล้ว</span>`;
+    if(s==='purchased') return `<span class="badge po">ซื้อแล้ว รอรับของ</span>`;
+    return `<span class="badge pr">รอดำเนินการ</span>`;
+  }
+
+  function openPurchaseListModal(){
+    purchaseFilter = 'all';
+    renderPurchaseFilterBar();
+    document.getElementById('purchaseListOverlay').classList.add('show');
+    loadPurchaseRequests();
+  }
+  function closePurchaseListModal(){ document.getElementById('purchaseListOverlay').classList.remove('show'); }
+
+  function renderPurchaseFilterBar(){
+    const filters = [
+      {key:'all', label:'ทั้งหมด'},
+      {key:'pending', label:'รอดำเนินการ'},
+      {key:'purchased', label:'ซื้อแล้ว รอรับของ'},
+      {key:'received', label:'รับของแล้ว'}
+    ];
+    document.getElementById('purchaseFilterBar').innerHTML = filters.map(f=>
+      `<div class="cat-chip ${purchaseFilter===f.key?'active':''}" tabindex="0" onclick="setPurchaseFilter('${f.key}')" onkeypress="if(event.key==='Enter')setPurchaseFilter('${f.key}')">${f.label}</div>`
+    ).join('');
+  }
+  function setPurchaseFilter(key){
+    purchaseFilter = key;
+    renderPurchaseFilterBar();
+    renderPurchaseList();
+  }
+
+  async function loadPurchaseRequests(){
+    const wrap = document.getElementById('purchaseListWrap');
+    wrap.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px 0;">กำลังโหลด...</div>';
+    try{
+      const data = await fetchAllRows(() => supabaseClient.from('purchase_requests').select('*').order('created_at', { ascending:false }));
+      purchaseRequests = (data || []).map(fromPurchaseDbRow);
+      renderPurchaseList();
+    }catch(e){
+      console.error('โหลดคำขอซื้อไม่สำเร็จ', e);
+      wrap.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px 0;font-size:12.5px;">⚠ โหลดข้อมูลไม่สำเร็จ ตรวจสอบว่าสร้างตาราง purchase_requests ใน Supabase แล้ว</div>';
+    }
+  }
+
+  function renderPurchaseList(){
+    const wrap = document.getElementById('purchaseListWrap');
+    let list = purchaseRequests;
+    if(purchaseFilter !== 'all'){
+      list = list.filter(p => purchaseStatusOf(p) === purchaseFilter);
+    }
+    if(!list.length){
+      wrap.innerHTML = '<div style="text-align:center;color:var(--sub);padding:20px 0;">ไม่มีรายการ</div>';
+      return;
+    }
+    wrap.innerHTML = list.map(p=>{
+      const t = p.createdAt ? new Date(p.createdAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '';
+      return `<div onclick="openPurchaseItemModal(${p.id})" style="display:flex;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer;align-items:center;">
+        <div style="width:52px;height:52px;border-radius:6px;overflow:hidden;background:#e7ebef;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">
+          ${p.damagedImageUrl ? `<img src="${p.damagedImageUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:14px;">${p.itemName}</div>
+          <div style="font-size:11.5px;color:var(--sub);">ขอโดย ${p.requestedByDisplay||'-'} · ${t}</div>
+        </div>
+        <div>${purchaseStatusBadge(p)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function openPurchaseItemModal(id){
+    currentPurchaseId = id;
+    pendingDamagedImageFile = null;
+    pendingNewItemImageFile = null;
+    document.getElementById('purchaseModalMsg').textContent = '';
+    document.getElementById('purchaseModalMsg').className = '';
+    const isNew = (id === null);
+    const p = isNew ? null : purchaseRequests.find(x=>x.id===id);
+    document.getElementById('purchaseModalTitle').textContent = isNew ? 'เพิ่มคำขอซื้อใหม่' : 'รายละเอียดคำขอซื้อ';
+    document.getElementById('purchaseModalSub').textContent = isNew ? 'แนบรูปอะไหล่ชำรุด และรูปอะไหล่ใหม่ที่ต้องการซื้อ' : '';
+    document.getElementById('purchaseItemName').value = p ? p.itemName : '';
+    document.getElementById('purchaseDamageDesc').value = p ? (p.damageDescription || '') : '';
+    document.getElementById('purchaseLink').value = p ? (p.purchaseLink || '') : '';
+    document.getElementById('damagedThumb').innerHTML = (p && p.damagedImageUrl) ? `<img src="${p.damagedImageUrl}" style="width:100%;height:100%;object-fit:cover;">` : DEFAULT_ICON;
+    document.getElementById('newItemThumb').innerHTML = (p && p.newItemImageUrl) ? `<img src="${p.newItemImageUrl}" style="width:100%;height:100%;object-fit:cover;">` : DEFAULT_ICON;
+    document.getElementById('purchasedCheck').checked = p ? !!p.purchased : false;
+    document.getElementById('receivedCheck').checked = p ? !!p.received : false;
+
+    // เฉพาะผู้แจ้งขอซื้อรายการนี้ หรือ admin เท่านั้นที่กด "ผู้ขอได้รับอะไหล่แล้ว" ได้
+    const requesterUsername = isNew ? (currentUser ? currentUser.username : null) : p.requestedBy;
+    const canMarkReceived = !!currentUser && (currentUser.role === 'admin' || currentUser.username === requesterUsername);
+    const receivedCheckEl = document.getElementById('receivedCheck');
+    receivedCheckEl.disabled = !canMarkReceived;
+    document.getElementById('receivedLockNote').style.display = canMarkReceived ? 'none' : 'block';
+
+    updatePurchaseMeta();
+    document.getElementById('purchaseDeleteWrap').style.display = (!isNew && currentUser && currentUser.role==='admin') ? 'flex' : 'none';
+    document.getElementById('purchaseRequestedNote').textContent = isNew
+      ? `ผู้ขอ: ${currentUser ? currentUser.displayName : '-'}`
+      : `ผู้ขอ: ${p.requestedByDisplay||'-'} · แจ้งเมื่อ ${p.createdAt ? new Date(p.createdAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '-'}`;
+    document.getElementById('purchaseItemOverlay').classList.add('show');
+  }
+  function closePurchaseItemModal(){ document.getElementById('purchaseItemOverlay').classList.remove('show'); currentPurchaseId = null; }
+
+  function toggleReceivedField(){
+    // ต้อง "ซื้อแล้ว" ก่อน ถึงจะติ๊ก "ได้รับอะไหล่แล้ว" ได้
+    if(document.getElementById('receivedCheck').checked && !document.getElementById('purchasedCheck').checked){
+      document.getElementById('purchasedCheck').checked = true;
+    }
+    updatePurchaseMeta();
+  }
+  function updatePurchaseMeta(){
+    const p = currentPurchaseId !== null ? purchaseRequests.find(x=>x.id===currentPurchaseId) : null;
+    const pMeta = document.getElementById('purchasedMeta');
+    const rMeta = document.getElementById('receivedMeta');
+    const purchasedChecked = document.getElementById('purchasedCheck').checked;
+    const receivedChecked = document.getElementById('receivedCheck').checked;
+    if(purchasedChecked && p && p.purchasedAt){
+      pMeta.style.display = 'block';
+      pMeta.textContent = `ซื้อโดย ${p.purchasedBy||'-'} เมื่อ ${new Date(p.purchasedAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'})}`;
+    } else { pMeta.style.display = 'none'; }
+    if(receivedChecked && p && p.receivedAt){
+      rMeta.style.display = 'block';
+      rMeta.textContent = `รับของโดย ${p.receivedBy||'-'} เมื่อ ${new Date(p.receivedAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'})}`;
+    } else { rMeta.style.display = 'none'; }
+  }
+
+  async function handlePurchaseImageSelect(evt, kind){
+    const file = evt.target.files[0];
+    if(!file) return;
+    const thumbId = kind==='damaged' ? 'damagedThumb' : 'newItemThumb';
+    const msg = document.getElementById('purchaseModalMsg');
+    let readableFile;
+    try{
+      readableFile = await ensureBrowserReadableImage(file);
+    }catch(e){
+      if(msg){ msg.textContent = e.message; msg.className = 'err'; }
+      evt.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e){
+      document.getElementById(thumbId).innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+    };
+    reader.readAsDataURL(readableFile);
+    if(kind==='damaged') pendingDamagedImageFile = readableFile;
+    else pendingNewItemImageFile = readableFile;
+  }
+
+  function openPurchaseImageLightbox(kind){
+    const thumbId = kind==='damaged' ? 'damagedThumb' : 'newItemThumb';
+    const img = document.getElementById(thumbId).querySelector('img');
+    if(!img) return; // ยังไม่มีรูปจริง
+    document.getElementById('lightboxImg').src = img.src;
+    document.getElementById('imageLightbox').classList.add('show');
+  }
+
+  async function uploadImageGeneric(file, pathPrefix, oldUrl){
+    try{
+      const blob = await resizeImageFile(file);
+      const path = `${pathPrefix}-${Date.now()}.jpg`;
+      const { error } = await supabaseClient.storage.from(IMAGE_BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
+      if(error) throw error;
+      const { data } = supabaseClient.storage.from(IMAGE_BUCKET).getPublicUrl(path);
+      if(oldUrl) deleteStorageImage(oldUrl); // ลบรูปเดิมทิ้ง ไม่ต้องรอผลลัพธ์
+      return data.publicUrl;
+    }catch(e){
+      console.error('อัปโหลดรูปภาพไม่สำเร็จ', e);
+      return null;
+    }
+  }
+
+  async function savePurchaseItem(){
+    const msg = document.getElementById('purchaseModalMsg');
+    const itemName = document.getElementById('purchaseItemName').value.trim();
+    if(!itemName){ msg.textContent = 'กรุณาใส่ชื่ออะไหล่/เครื่องมือที่ขอซื้อ'; msg.className = 'err'; return; }
+
+    const isNew = (currentPurchaseId === null);
+    const p = isNew ? null : purchaseRequests.find(x=>x.id===currentPurchaseId);
+
+    msg.textContent = 'กำลังบันทึก...';
+    msg.className = '';
+
+    let damagedImageUrl = p ? p.damagedImageUrl : null;
+    let newItemImageUrl = p ? p.newItemImageUrl : null;
+    if(pendingDamagedImageFile){
+      msg.textContent = 'กำลังอัปโหลดรูปภาพ...';
+      const url = await uploadImageGeneric(pendingDamagedImageFile, 'purchase-damaged', p ? p.damagedImageUrl : null);
+      if(url) damagedImageUrl = url;
+    }
+    if(pendingNewItemImageFile){
+      msg.textContent = 'กำลังอัปโหลดรูปภาพ...';
+      const url = await uploadImageGeneric(pendingNewItemImageFile, 'purchase-new', p ? p.newItemImageUrl : null);
+      if(url) newItemImageUrl = url;
+    }
+
+    const purchasedChecked = document.getElementById('purchasedCheck').checked;
+    const nowIso = new Date().toISOString();
+    const displayName = currentUser ? currentUser.displayName : 'ไม่ทราบผู้ใช้';
+
+    // ป้องกันอีกชั้น: เฉพาะผู้แจ้งขอซื้อรายการนี้ หรือ admin เท่านั้นที่เปลี่ยนสถานะ "รับของแล้ว" ได้
+    const requesterUsername = isNew ? (currentUser ? currentUser.username : null) : p.requestedBy;
+    const canMarkReceived = !!currentUser && (currentUser.role === 'admin' || currentUser.username === requesterUsername);
+    let receivedChecked = document.getElementById('receivedCheck').checked;
+    if(!canMarkReceived){
+      receivedChecked = p ? !!p.received : false; // คงสถานะเดิมไว้ ห้ามเปลี่ยนโดยไม่มีสิทธิ์
+    }
+
+    let purchasedAt = p ? p.purchasedAt : null;
+    let purchasedBy = p ? p.purchasedBy : null;
+    if(purchasedChecked && !(p && p.purchased)){ purchasedAt = nowIso; purchasedBy = displayName; }
+    if(!purchasedChecked){ purchasedAt = null; purchasedBy = null; }
+
+    let receivedAt = p ? p.receivedAt : null;
+    let receivedBy = p ? p.receivedBy : null;
+    if(receivedChecked && !(p && p.received)){ receivedAt = nowIso; receivedBy = displayName; }
+    if(!receivedChecked){ receivedAt = null; receivedBy = null; }
+
+    const payload = {
+      itemName,
+      damageDescription: document.getElementById('purchaseDamageDesc').value.trim(),
+      purchaseLink: document.getElementById('purchaseLink').value.trim(),
+      damagedImageUrl, newItemImageUrl,
+      purchased: purchasedChecked, purchasedAt, purchasedBy,
+      received: receivedChecked, receivedAt, receivedBy,
+      requestedBy: isNew ? (currentUser ? currentUser.username : null) : p.requestedBy,
+      requestedByDisplay: isNew ? displayName : p.requestedByDisplay
+    };
+
+    try{
+      if(isNew){
+        const { data, error } = await supabaseClient.from('purchase_requests').insert(toPurchaseDbRow(payload)).select().single();
+        if(error) throw error;
+        const newRow = fromPurchaseDbRow(data);
+        purchaseRequests.unshift(newRow);
+        logActivity('เพิ่มคำขอซื้อ', null, `ขอซื้อ ${newRow.itemName}`);
+      } else {
+        const { error } = await supabaseClient.from('purchase_requests').update(toPurchaseDbRow(payload)).eq('id', p.id);
+        if(error) throw error;
+        Object.assign(p, payload);
+        const extra = (payload.received ? ' · ได้รับอะไหล่แล้ว' : (payload.purchased ? ' · ซื้อแล้ว รอรับของ' : ''));
+        logActivity('แก้ไขคำขอซื้อ', null, `อัปเดตคำขอซื้อ ${payload.itemName}${extra}`);
+      }
+      msg.textContent = 'บันทึกสำเร็จ';
+      msg.className = 'ok';
+      setTimeout(()=>{ closePurchaseItemModal(); renderPurchaseList(); }, 500);
+    }catch(e){
+      console.error('บันทึกคำขอซื้อไม่สำเร็จ', e);
+      msg.textContent = '⚠ บันทึกไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ');
+      msg.className = 'err';
+    }
+  }
+
+  async function deletePurchaseItem(){
+    if(!currentUser || currentUser.role !== 'admin') return;
+    const p = purchaseRequests.find(x=>x.id===currentPurchaseId);
+    if(!p) return;
+    if(!confirm(`ยืนยันลบคำขอซื้อ "${p.itemName}"? การกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+    const msg = document.getElementById('purchaseModalMsg');
+    msg.textContent = 'กำลังลบ...';
+    msg.className = '';
+    try{
+      const { error } = await supabaseClient.from('purchase_requests').delete().eq('id', p.id);
+      if(error) throw error;
+      if(p.damagedImageUrl) deleteStorageImage(p.damagedImageUrl);
+      if(p.newItemImageUrl) deleteStorageImage(p.newItemImageUrl);
+      purchaseRequests = purchaseRequests.filter(x=>x.id!==p.id);
+      logActivity('ลบคำขอซื้อ', null, `ลบคำขอซื้อ ${p.itemName}`);
+      closePurchaseItemModal();
+      renderPurchaseList();
+    }catch(e){
+      console.error('ลบคำขอซื้อไม่สำเร็จ', e);
+      msg.textContent = '⚠ ลบไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ');
+      msg.className = 'err';
+    }
+  }
+
+  function renderRoomTabs(){
+    const rooms = ['MTG2A','MTG2B'];
+    document.getElementById('roomTabs').innerHTML = rooms.map(r=>{
+      const items = parts.filter(p=>p.location===r);
+      const lowCount = items.filter(p=>p.qty < p.min).length;
+      return `
+        <div class="room-tab ${r===activeRoom?'active':''}" tabindex="0" onclick="setRoom('${r}')" onkeypress="if(event.key==='Enter')setRoom('${r}')">
+          <div class="rt-name">ห้อง ${r}</div>
+          <div class="rt-meta">${items.length} รายการ${lowCount?' · ต่ำกว่า Min ' + lowCount + ' รายการ':''}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function setRoom(r){
+    activeRoom = r;
+    activeCategory = 'ทั้งหมด';
+    renderRoomTabs();
+    renderCategories();
+    applyFilters();
+    if(document.getElementById('tableViewWrap').style.display !== 'none'){
+      tableCurrentPage = 1;
+      renderStockTable();
+    }
+  }
+
+  function escapeAttr(str){ return String(str).replace(/'/g, "\\'"); }
+
+  function renderCategories(){
+    const roomParts = parts.filter(p=>p.location===activeRoom);
+    const cats = ['ทั้งหมด', ...new Set(roomParts.map(p=>p.category))];
+    const isAdmin = currentUser && currentUser.role === 'admin';
+    const chipsHtml = cats.map(c => {
+      if(c === renamingCategory){
+        return `<div class="cat-chip-input">
+           <input type="text" id="renameCatInput" value="${c}" onkeydown="if(event.key==='Enter'){confirmRenameCategory('${escapeAttr(c)}');} if(event.key==='Escape'){cancelRenameCategory();}">
+           <span onclick="confirmRenameCategory('${escapeAttr(c)}')" title="ยืนยัน">✓</span>
+           <span class="cancel" onclick="cancelRenameCategory()" title="ยกเลิก">✕</span>
+         </div>`;
+      }
+      const editIcon = (c==='ทั้งหมด' || !isAdmin) ? '' : `<span class="cat-edit-icon" onclick="event.stopPropagation(); startRenameCategory('${escapeAttr(c)}')" title="แก้ไขชื่อหมวดหมู่">✎</span>`;
+      const deleteIcon = (c==='ทั้งหมด' || !isAdmin) ? '' : `<span class="cat-edit-icon" onclick="event.stopPropagation(); deleteCategory('${escapeAttr(c)}')" title="ลบหมวดหมู่นี้">🗑</span>`;
+      return `<div class="cat-chip ${c===activeCategory?'active':''}" tabindex="0" onclick="setCategory('${escapeAttr(c)}')" onkeypress="if(event.key==='Enter')setCategory('${escapeAttr(c)}')">${c}${editIcon}${deleteIcon}</div>`;
+    }).join('');
+    let addHtml = '';
+    if(isAdmin){
+      addHtml = addingCategory
+        ? `<div class="cat-chip-input">
+             <input type="text" id="newCatInput" placeholder="ชื่อหมวดหมู่ใหม่" onkeydown="if(event.key==='Enter'){confirmAddCategory();} if(event.key==='Escape'){cancelAddCategory();}">
+             <span onclick="confirmAddCategory()" title="ยืนยัน">✓</span>
+             <span class="cancel" onclick="cancelAddCategory()" title="ยกเลิก">✕</span>
+           </div>`
+        : `<div class="cat-chip cat-add" tabindex="0" onclick="startAddCategory()" onkeypress="if(event.key==='Enter')startAddCategory()">+ เพิ่มหมวดหมู่</div>`;
+    }
+    document.getElementById('catBar').innerHTML = chipsHtml + addHtml;
+    if(addingCategory){
+      const el = document.getElementById('newCatInput');
+      if(el) el.focus();
+    }
+    if(renamingCategory){
+      const el = document.getElementById('renameCatInput');
+      if(el){ el.focus(); el.select(); }
+    }
+  }
+
+  function startRenameCategory(oldName){
+    if(!currentUser || currentUser.role !== 'admin') return; // เฉพาะ admin เท่านั้น
+    renamingCategory = oldName;
+    addingCategory = false;
+    renderCategories();
+  }
+  function cancelRenameCategory(){
+    renamingCategory = null;
+    renderCategories();
+  }
+  function confirmRenameCategory(oldName){
+    if(!currentUser || currentUser.role !== 'admin'){ renamingCategory = null; renderCategories(); return; }
+    const el = document.getElementById('renameCatInput');
+    const newName = el ? el.value.trim() : '';
+    renamingCategory = null;
+    if(!newName || newName===oldName){ renderCategories(); return; }
+    const affectedCount = parts.filter(p=>p.category===oldName).length;
+    parts.forEach(p=>{ if(p.category===oldName) p.category = newName; });
+    if(activeCategory===oldName) activeCategory = newName;
+    const affectedRows = parts.filter(p=>p.category===newName);
+    persistParts(affectedRows);
+    logActivity('เปลี่ยนชื่อหมวดหมู่', null, `เปลี่ยนหมวดหมู่ "${oldName}" เป็น "${newName}" (${affectedCount} รายการ)`);
+    renderCategories();
+    applyFilters();
+  }
+
+  async function deleteCategory(name){
+    if(!currentUser || currentUser.role !== 'admin') return; // เฉพาะ admin เท่านั้น
+    const affected = parts.filter(p=>p.location===activeRoom && p.category===name);
+    if(!affected.length){ renderCategories(); return; }
+    if(!confirm(`ยืนยันลบหมวดหมู่ "${name}"? อะไหล่ในหมวดนี้ทั้งหมด ${affected.length} รายการ (ห้อง ${activeRoom}) จะถูกลบไปด้วย และไม่สามารถย้อนกลับได้`)) return;
+    try{
+      const codes = affected.map(p=>p.code);
+      const { error } = await supabaseClient.from('parts').delete().in('code', codes);
+      if(error) throw error;
+      affected.forEach(p=>{ if(p.imageUrl) deleteStorageImage(p.imageUrl); });
+      parts = parts.filter(p=>!(p.location===activeRoom && p.category===name));
+      if(activeCategory===name) activeCategory = 'ทั้งหมด';
+      logActivity('ลบหมวดหมู่', null, `ลบหมวดหมู่ "${name}" พร้อมอะไหล่ ${affected.length} รายการ (ห้อง ${activeRoom})`);
+      renderRoomTabs();
+      renderCategories();
+      applyFilters();
+    }catch(e){
+      console.error('ลบหมวดหมู่ไม่สำเร็จ', e);
+      alert('⚠ ลบหมวดหมู่ไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ'));
+    }
+  }
+
+  function startAddCategory(){
+    if(!currentUser || currentUser.role !== 'admin') return; // เฉพาะ admin เท่านั้น
+    addingCategory = true;
+    renamingCategory = null;
+    renderCategories();
+  }
+  function cancelAddCategory(){
+    addingCategory = false;
+    renderCategories();
+  }
+  function confirmAddCategory(){
+    if(!currentUser || currentUser.role !== 'admin'){ addingCategory = false; renderCategories(); return; }
+    const el = document.getElementById('newCatInput');
+    const val = el ? el.value.trim() : '';
+    addingCategory = false;
+    if(!val){ renderCategories(); return; }
+    openAddModal(val);
+  }
+
+  function setCategory(c){ activeCategory = c; renderCategories(); applyFilters(); }
+
+  function applyFilters(){
+    const q = document.getElementById('searchBox').value.trim().toLowerCase();
+    const filtered = parts.filter(p=>{
+      const matchRoom = p.location===activeRoom;
+      const matchCat = activeCategory==='ทั้งหมด' || p.category===activeCategory;
+      const matchQ = p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || (p.model||'').toLowerCase().includes(q) || (p.brand||'').toLowerCase().includes(q) || (p.storageSpot||'').toLowerCase().includes(q);
+      return matchRoom && matchCat && matchQ;
+    });
+    render(filtered);
+  }
+
+  // ===== หน้าตารางรายการอะไหล่ทั้งหมด (เรียงตามรหัส) =====
+  // ใช้ตัวแปร parts ชุดเดียวกับหน้าการ์ด — แก้ค่าคงเหลือที่นี่จะอัปเดต object เดียวกัน
+  // แล้ว persist ไปฐานข้อมูลเหมือนกับตอนแก้ในหน้าต่างการ์ด จึงไม่มีข้อมูลสองชุดให้เพี้ยนกัน
+  const codeCollator = new Intl.Collator('th', { numeric: true, sensitivity: 'base' });
+
+  let tableSortKey = 'code';
+  let tableSortDir = 'asc';
+  let tableCurrentPage = 1;
+  let tableTotalPages = 1;
+  const TABLE_PAGE_SIZE = 50;
+
+  function showTableView(){
+    document.getElementById('grid').style.display = 'none';
+    document.getElementById('catBar').style.display = 'none';
+    document.getElementById('tableViewWrap').style.display = 'block';
+    tableCurrentPage = 1;
+    renderStockTable();
+  }
+  function hideTableView(){
+    document.getElementById('tableViewWrap').style.display = 'none';
+    document.getElementById('grid').style.display = 'grid';
+    document.getElementById('catBar').style.display = '';
+  }
+
+  function sortTableBy(key){
+    if(tableSortKey === key){
+      tableSortDir = (tableSortDir === 'asc') ? 'desc' : 'asc';
+    } else {
+      tableSortKey = key;
+      tableSortDir = 'asc';
+    }
+    tableCurrentPage = 1;
+    renderStockTable();
+  }
+
+  function compareRows(a, b, key, dir){
+    let cmp;
+    if(key === 'code'){
+      cmp = codeCollator.compare(a.code, b.code);
+    } else if(key === 'min' || key === 'qty'){
+      cmp = (a[key] || 0) - (b[key] || 0);
+    } else if(key === 'modelBrand'){
+      const av = [a.model, a.brand].filter(Boolean).join(' ');
+      const bv = [b.model, b.brand].filter(Boolean).join(' ');
+      cmp = av.localeCompare(bv, 'th');
+    } else {
+      cmp = String(a[key]||'').localeCompare(String(b[key]||''), 'th');
+    }
+    return dir === 'asc' ? cmp : -cmp;
+  }
+
+  function updateSortArrows(){
+    ['code','name','modelBrand','min','qty','status'].forEach(k=>{
+      const el = document.getElementById('sortArrow-' + k);
+      if(!el) return;
+      el.textContent = (k === tableSortKey) ? (tableSortDir === 'asc' ? '▲' : '▼') : '';
+    });
+  }
+
+  function changeTablePage(delta){
+    tableCurrentPage = Math.min(Math.max(1, tableCurrentPage + delta), tableTotalPages);
+    renderStockTable();
+    const tableEl = document.getElementById('stockTable');
+    if(tableEl) tableEl.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function renderStockTable(){
+    const tbody = document.getElementById('stockTableBody');
+    const titleEl = document.getElementById('stockTableTitle');
+    if(titleEl) titleEl.textContent = `รายการอะไหล่ทั้งหมด (ห้อง ${activeRoom})`;
+
+    const all = parts.filter(p=>p.location===activeRoom);
+    all.sort((a,b)=>compareRows(a, b, tableSortKey, tableSortDir));
+    updateSortArrows();
+
+    tableTotalPages = Math.max(1, Math.ceil(all.length / TABLE_PAGE_SIZE));
+    tableCurrentPage = Math.min(Math.max(1, tableCurrentPage), tableTotalPages);
+    const startIdx = (tableCurrentPage - 1) * TABLE_PAGE_SIZE;
+    const pageItems = all.slice(startIdx, startIdx + TABLE_PAGE_SIZE);
+
+    tbody.innerHTML = pageItems.map(p=>{
+      const low = p.qty < p.min;
+      const modelBrand = [p.model, p.brand].filter(Boolean).join(' · ') || '—';
+      const curStatus = p.status || 'ยังไม่ขอซื้อ';
+      const needsPo = curStatus.indexOf('PR')!==-1 || curStatus.indexOf('PO')!==-1;
+      const statusOptionsHtml = STATUS_OPTIONS.map(s=>`<option value="${s}" ${s===curStatus?'selected':''}>${s}</option>`).join('');
+      return `
+        <tr data-code="${p.code}">
+          <td class="st-code" style="cursor:pointer;color:var(--steel);" onclick="openModal('${p.code}')" title="คลิกเพื่อแก้ไขรายละเอียดทั้งหมด">${p.code}</td>
+          <td>
+            <div class="st-name">${p.name}</div>
+            <div class="st-sub">${p.category}</div>
+          </td>
+          <td class="st-sub">${modelBrand}</td>
+          <td class="st-num">${p.min} – ${(p.max===null||p.max===undefined) ? 'ไม่จำกัด' : p.max}</td>
+          <td class="st-num">
+            <input type="number" class="st-qty-input ${low?'low':''}" min="0" step="1"
+              value="${p.qty}"
+              onchange="updateQtyFromTable('${p.code}', this)">
+            <div class="st-sub" style="margin-top:2px;${low?'color:var(--red);':''}">ต้องมีอย่างน้อย ${p.min}</div>
+            <span class="st-saving" id="stSaving-${p.code}" style="display:none;">กำลังบันทึก...</span>
+          </td>
+          <td class="st-num" id="stStatus-${p.code}">
+            <select class="st-status-select" onchange="updateStatusFromTable('${p.code}', this)">${statusOptionsHtml}</select>
+            <input type="text" class="st-po-input" id="stPo-${p.code}" placeholder="เลขที่ PR/PO"
+              value="${p.poNumber||''}" style="display:${needsPo?'block':'none'};"
+              onchange="updatePoFromTable('${p.code}', this)">
+            <span class="st-saving" id="stStatusSaving-${p.code}" style="display:none;">กำลังบันทึก...</span>
+          </td>
+          <td class="st-meta" id="stMeta-${p.code}">${p.updatedAt || '—'}${p.updatedBy ? '<br>โดย ' + p.updatedBy : ''}</td>
+        </tr>`;
+    }).join('');
+
+    const pageInfo = document.getElementById('tablePageInfo');
+    if(pageInfo){
+      pageInfo.textContent = all.length === 0
+        ? 'ไม่พบรายการในห้องนี้'
+        : `แสดง ${startIdx+1}–${Math.min(startIdx+TABLE_PAGE_SIZE, all.length)} จากทั้งหมด ${all.length} รายการ · หน้า ${tableCurrentPage}/${tableTotalPages}`;
+    }
+    const prevBtn = document.getElementById('tablePrevBtn');
+    const nextBtn = document.getElementById('tableNextBtn');
+    if(prevBtn){ prevBtn.disabled = tableCurrentPage <= 1; prevBtn.style.opacity = prevBtn.disabled ? '0.5' : ''; prevBtn.style.cursor = prevBtn.disabled ? 'not-allowed' : 'pointer'; }
+    if(nextBtn){ nextBtn.disabled = tableCurrentPage >= tableTotalPages; nextBtn.style.opacity = nextBtn.disabled ? '0.5' : ''; nextBtn.style.cursor = nextBtn.disabled ? 'not-allowed' : 'pointer'; }
+  }
+
+  async function updateQtyFromTable(code, inputEl){
+    const p = parts.find(x=>x.code===code);
+    if(!p) return;
+    const val = inputEl.value;
+    if(val===''||isNaN(val)||Number(val)<0){
+      inputEl.value = p.qty; // ค่าไม่ถูกต้อง คืนค่าเดิม
+      return;
+    }
+    const newQty = Number(val);
+    if(newQty === p.qty) return;
+
+    const prevQty = p.qty;
+    const delta = newQty - prevQty; // ส่ง "ผลต่าง" ไปบวก/ลบที่ฐานข้อมูลโดยตรง แทนการเขียนทับด้วยค่าตายตัว
+    const now = new Date();
+    const nowStr = now.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    const updatedBy = currentUser ? currentUser.displayName : 'ไม่ทราบผู้ใช้';
+    const savingEl = document.getElementById('stSaving-' + code);
+    if(savingEl) savingEl.style.display = 'inline';
+
+    let updatedRow;
+    try{
+      updatedRow = await adjustPartQty(p.code, delta, nowStr, updatedBy);
+    }catch(e){
+      console.error('ปรับยอดไม่สำเร็จ', e);
+      inputEl.value = p.qty; // ยกเลิก คืนค่าเดิมในช่องกรอก
+      const statusEl = document.getElementById('syncStatus');
+      const errMsg = (e && e.message) ? e.message : 'ไม่ทราบสาเหตุ';
+      if(statusEl) statusEl.textContent = '⚠ ปรับยอดไม่สำเร็จ: ' + errMsg;
+      if(savingEl) savingEl.style.display = 'none';
+      return;
+    }
+
+    // ใช้ค่าจริงที่ตอบกลับมาจาก DB เสมอ (เผื่อมีคนอื่นแก้พร้อมกัน ค่านี้จะถูกต้อง 100% เพราะ DB คำนวณให้)
+    p.qty = updatedRow.qty;
+    p.updatedAt = updatedRow.updatedAt;
+    p.updatedBy = updatedRow.updatedBy;
+
+    if(delta > 0){
+      logActivity('เติมอะไหล่', p, `เติม ${delta} ${p.unit} (จาก ${prevQty} เป็น ${p.qty}) ผ่านหน้าตาราง`, delta);
+    } else {
+      logActivity('ปรับยอดลดลง', p, `ปรับยอดจาก ${prevQty} เหลือ ${p.qty} ${p.unit} ผ่านหน้าตาราง (ไม่ได้ผ่านปุ่มเบิก)`, -delta);
+    }
+
+    renderStockTable(); // รีเรนเดอร์แถวใหม่ทั้งหมด ให้สี/ข้อความเตือนตรงกับค่าล่าสุด
+    // ให้หน้าการ์ดที่อยู่เบื้องหลังอัปเดตด้วย เผื่อผู้ใช้กลับไปดู
+    applyFilters();
+  }
+
+  async function updateStatusFromTable(code, selectEl){
+    const p = parts.find(x=>x.code===code);
+    if(!p) return;
+    const newStatus = selectEl.value;
+    if(newStatus === (p.status || 'ยังไม่ขอซื้อ')) return;
+    const prevStatus = p.status || 'ยังไม่ขอซื้อ';
+    const needsPo = newStatus.indexOf('PR')!==-1 || newStatus.indexOf('PO')!==-1;
+    if(!needsPo) p.poNumber = ''; // เปลี่ยนกลับเป็นสถานะที่ไม่ต้องมีเลข PO แล้ว ล้างทิ้งกันข้อมูลค้าง
+
+    const now = new Date();
+    p.status = newStatus;
+    p.updatedAt = now.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    p.updatedBy = currentUser ? currentUser.displayName : 'ไม่ทราบผู้ใช้';
+
+    const savingEl = document.getElementById('stStatusSaving-' + code);
+    if(savingEl) savingEl.style.display = 'inline';
+    await persistParts([p]);
+    logActivity('เปลี่ยนสถานะการขอซื้อ', p, `เปลี่ยนสถานะจาก "${prevStatus}" เป็น "${newStatus}" ผ่านหน้าตาราง`, 0);
+
+    renderStockTable();
+    applyFilters();
+  }
+
+  async function updatePoFromTable(code, inputEl){
+    const p = parts.find(x=>x.code===code);
+    if(!p) return;
+    const val = inputEl.value.trim();
+    if(val === (p.poNumber || '')) return;
+
+    const now = new Date();
+    p.poNumber = val;
+    p.updatedAt = now.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    p.updatedBy = currentUser ? currentUser.displayName : 'ไม่ทราบผู้ใช้';
+
+    const savingEl = document.getElementById('stStatusSaving-' + code);
+    if(savingEl) savingEl.style.display = 'inline';
+    await persistParts([p]);
+    logActivity('แก้ไขเลขที่ PR/PO', p, `แก้ไขเลขที่เป็น "${p.poNumber || '(ว่าง)'}" ผ่านหน้าตาราง`, 0);
+
+    renderStockTable();
+    applyFilters();
+  }
+
+  function csvEscape(val){
+    const s = (val===null || val===undefined) ? '' : String(val);
+    if(/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }
+
+  function exportStockTableCSV(){
+    const sorted = parts
+      .filter(p=>p.location===activeRoom)
+      .sort((a,b)=>codeCollator.compare(a.code, b.code));
+    const headers = ['รหัส','ชื่ออะไหล่','หมวดหมู่','รุ่น','แบรนด์','Min','Max','คงเหลือ','หน่วย','ห้อง','สถานะการขอซื้อ','เลขที่ PR/PO','แก้ไขล่าสุด','แก้ไขโดย'];
+    const rows = sorted.map(p => [
+      p.code, p.name, p.category, p.model || '', p.brand || '',
+      p.min, (p.max===null||p.max===undefined) ? 'ไม่จำกัด' : p.max, p.qty, p.unit || '', p.location || '',
+      p.status || '', p.poNumber || '',
+      p.updatedAt || '', p.updatedBy || ''
+    ]);
+    const csvLines = [headers, ...rows].map(r => r.map(csvEscape).join(','));
+    const csvContent = '\uFEFF' + csvLines.join('\r\n'); // ใส่ BOM กันภาษาไทยเพี้ยนตอนเปิดด้วย Excel
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `รายการอะไหล่_${activeRoom}_${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  const RENDER_CHUNK = 60;
+  let vsList = [];
+  let vsRenderedCount = 0;
+  let vsObserver = null;
+
+  function cardHtml(p){
+    const low = p.qty < p.min;
+    const cardClass = low ? 'low' : 'ok';
+    return `
+      <div class="card ${cardClass}" tabindex="0" onclick="openModal('${p.code}')" onkeypress="if(event.key==='Enter')openModal('${p.code}')">
+        <div class="thumb">${p.imageUrl ? `<img src="${p.thumbUrl || p.imageUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">` : iconFor(p)}</div>
+        <div class="body">
+          <div class="cat-label">${p.category}</div>
+          <div class="p-name">${p.name}</div>
+          <div class="info-rows">
+            <div class="info-row row-code"><span class="info-tag">รหัส</span>${p.code}</div>
+            ${p.model ? `<div class="info-row row-model"><span class="info-tag">รุ่น</span>${p.model}</div>` : ''}
+            ${p.brand ? `<div class="info-row row-brand"><span class="info-tag">แบรนด์</span>${p.brand}</div>` : ''}
+            ${p.storageSpot ? `<div class="info-row row-spot"><span class="info-tag">📍</span>${p.storageSpot}</div>` : ''}
+          </div>
+          <div class="stat-line"><span>Min – Max</span><span>${p.min} – ${(p.max===null||p.max===undefined) ? 'ไม่จำกัด' : p.max} ${p.unit}</span></div>
+          <div class="stat-line"><span>คงเหลือ</span><span class="qty ${low?'low':''}">${p.qty} ${p.unit}</span></div>
+          <div class="badge ${badgeClass(p.status)}">${p.status}${p.poNumber?' · '+p.poNumber:''}</div>
+          <div class="upd">แก้ไขล่าสุด: ${p.updatedAt} โดย ${p.updatedBy}</div>
+        </div>
+      </div>`;
+  }
+
+  function vsRenderNextChunk(){
+    const sentinel = document.getElementById('vsSentinel');
+    if(!sentinel) return;
+    const next = vsList.slice(vsRenderedCount, vsRenderedCount + RENDER_CHUNK);
+    if(next.length===0) return;
+    sentinel.insertAdjacentHTML('beforebegin', next.map(cardHtml).join(''));
+    vsRenderedCount += next.length;
+    if(vsRenderedCount >= vsList.length && vsObserver){
+      vsObserver.disconnect();
+      vsObserver = null;
+    }
+  }
+
+  function render(list){
+    const grid = document.getElementById('grid');
+    const addCardHtml = `
+        <div class="card add-card" tabindex="0" onclick="openAddModal()" onkeypress="if(event.key==='Enter')openAddModal()">
+          <div class="ac-inner">
+            <div class="ac-plus">+</div>
+            <div class="ac-label">เพิ่มอะไหล่ใหม่</div>
+          </div>
+        </div>`;
+
+    if(vsObserver){ vsObserver.disconnect(); vsObserver = null; }
+    vsList = list;
+    vsRenderedCount = 0;
+
+    if(list.length===0){
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--sub);padding:30px 0;">ไม่พบอะไหล่ที่ตรงกับคำค้นหา</div>' + addCardHtml;
+      return;
+    }
+
+    grid.innerHTML = '<div id="vsSentinel" style="grid-column:1/-1;height:1px;"></div>' + addCardHtml;
+    vsRenderNextChunk();
+
+    const sentinel = document.getElementById('vsSentinel');
+    vsObserver = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{ if(entry.isIntersecting) vsRenderNextChunk(); });
+    }, { root:null, rootMargin:'600px', threshold:0 });
+    vsObserver.observe(sentinel);
+  }
+
+  let searchDebounceTimer = null;
+  document.getElementById('searchBox').addEventListener('input', function(){
+    document.getElementById('searchClearBtn').style.display = this.value ? 'block' : 'none';
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(applyFilters, 150);
+  });
+
+  function clearSearchBox(){
+    const box = document.getElementById('searchBox');
+    box.value = '';
+    document.getElementById('searchClearBtn').style.display = 'none';
+    box.focus();
+    applyFilters();
+  }
+
+  // ปุ่มลอยกลับขึ้นบนสุด + เงาแถบเครื่องมือตอนเลื่อนหน้าจอ
+  window.addEventListener('scroll', function(){
+    const scrolled = window.scrollY > 10;
+    const wrap = document.getElementById('stickyToolbarWrap');
+    if(wrap) wrap.classList.toggle('scrolled', scrolled);
+    const backBtn = document.getElementById('backToTopBtn');
+    if(backBtn) backBtn.style.display = window.scrollY > 400 ? 'flex' : 'none';
+  }, { passive: true });
+
+  function setMode(mode){
+    currentMode = mode;
+    document.getElementById('modeBtnSet').classList.toggle('active', mode==='set');
+    document.getElementById('modeBtnWithdraw').classList.toggle('active', mode==='withdraw');
+    document.getElementById('setWrap').style.display = mode==='set' ? 'block' : 'none';
+    document.getElementById('withdrawWrap').style.display = mode==='withdraw' ? 'block' : 'none';
+    document.getElementById('modalMsg').textContent = '';
+    if(mode==='withdraw'){
+      document.getElementById('mWithdrawQty').value = '';
+      updateWithdrawPreview();
+    }
+  }
+
+  function updateWithdrawPreview(){
+    const p = parts.find(x=>x.code===currentCode);
+    if(!p) return;
+    const wEl = document.getElementById('mWithdrawQty');
+    const w = Number(wEl.value);
+    const previewEl = document.getElementById('withdrawPreview');
+    if(wEl.value===''||isNaN(w)||w<=0){
+      previewEl.classList.remove('show','warn');
+      return;
+    }
+    const after = p.qty - w;
+    previewEl.classList.add('show');
+    if(after < 0){
+      previewEl.classList.add('warn');
+      previewEl.innerHTML = `⚠ จำนวนเบิกมากกว่าคงเหลือ (มีอยู่ ${p.qty} ${p.unit})`;
+    } else {
+      previewEl.classList.remove('warn');
+      previewEl.innerHTML = `คงเหลือหลังเบิก: <b>${after} ${p.unit}</b> (จาก ${p.qty} ${p.unit})`;
+    }
+  }
+
+  function renderBarcode(){
+    const box = document.getElementById('barcodeBox');
+    const val = document.getElementById('mCode').value.trim();
+    if(!val){
+      box.innerHTML = '<span class="bc-empty">ยังไม่มีรหัส</span>';
+      return;
+    }
+    if(typeof JsBarcode === 'undefined'){
+      box.innerHTML = '<span class="bc-empty">โหลดไลบรารีบาร์โค้ดไม่สำเร็จ</span>';
+      return;
+    }
+    box.innerHTML = '<svg id="barcodeSvg"></svg>';
+    try{
+      JsBarcode('#barcodeSvg', val, {
+        format: 'CODE128',
+        width: 1.6,
+        height: 40,
+        fontSize: 11,
+        margin: 4,
+        displayValue: true
+      });
+    }catch(e){
+      box.innerHTML = '<span class="bc-empty">รหัสไม่ถูกต้องสำหรับสร้างบาร์โค้ด</span>';
+    }
+  }
+
+  // ตรวจสอบรหัสสินค้าซ้ำแบบเรียลไทม์ขณะพิมพ์ — เทียบแบบไม่สนตัวพิมพ์เล็ก/ใหญ่
+  // ไม่นับรหัสเดิมของรายการที่กำลังแก้ไขอยู่ (currentCode) ว่าเป็นการซ้ำ
+  function checkCodeDuplicate(){
+    const val = document.getElementById('mCode').value.trim();
+    const dupNote = document.getElementById('codeDupNote');
+    const isDup = !!val && parts.some(x => x.code.toLowerCase() === val.toLowerCase() && x.code !== currentCode);
+    dupNote.style.display = isDup ? 'block' : 'none';
+    updateSaveButtonState();
+    return isDup;
+  }
+
+  function checkModelDuplicate(){
+    const val = document.getElementById('mModel').value.trim();
+    const dupNote = document.getElementById('modelDupNote');
+    // เช็คเฉพาะในห้องเดียวกัน และไม่นับตัวเอง (กรณีแก้ไขรายการเดิมโดยไม่ได้เปลี่ยนรุ่น)
+    const isDup = !!val && parts.some(x => x.location===activeRoom && (x.model||'').toLowerCase() === val.toLowerCase() && x.code !== currentCode);
+    dupNote.style.display = isDup ? 'block' : 'none';
+    updateSaveButtonState();
+    return isDup;
+  }
+
+  function updateSaveButtonState(){
+    const saveBtn = document.getElementById('saveBtn');
+    if(!saveBtn) return;
+    const codeDupNote = document.getElementById('codeDupNote');
+    const modelDupNote = document.getElementById('modelDupNote');
+    const isDup = (codeDupNote && codeDupNote.style.display === 'block') || (modelDupNote && modelDupNote.style.display === 'block');
+    saveBtn.disabled = isDup;
+    saveBtn.style.opacity = isDup ? '0.5' : '';
+    saveBtn.style.cursor = isDup ? 'not-allowed' : '';
+  }
+
+  function openBarcodeLightbox(){
+    const val = document.getElementById('mCode').value.trim();
+    if(!val || typeof JsBarcode === 'undefined') return; // ยังไม่มีรหัส หรือไลบรารีโหลดไม่สำเร็จ
+    const box = document.getElementById('barcodeLightboxBox');
+    box.innerHTML = '<svg id="barcodeLightboxSvg"></svg>';
+    try{
+      JsBarcode('#barcodeLightboxSvg', val, {
+        format: 'CODE128',
+        width: 3,
+        height: 90,
+        fontSize: 18,
+        margin: 10,
+        displayValue: true
+      });
+    }catch(e){
+      box.innerHTML = '<span class="bc-empty">รหัสไม่ถูกต้องสำหรับสร้างบาร์โค้ด</span>';
+      return;
+    }
+    document.getElementById('barcodeLightbox').classList.add('show');
+  }
+  function closeBarcodeLightbox(){
+    document.getElementById('barcodeLightbox').classList.remove('show');
+  }
+
+  function printBarcode(){
+    const svgEl = document.getElementById('barcodeLightboxSvg');
+    if(!svgEl) return;
+    const code = document.getElementById('mCode').value.trim();
+    const name = document.getElementById('mName').value.trim();
+    const svgHtml = svgEl.outerHTML;
+    const printWin = window.open('', '_blank', 'width=420,height=380');
+    if(!printWin){ alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาต Pop-up แล้วลองใหม่'); return; }
+    printWin.document.write(`
+      <!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>พิมพ์บาร์โค้ด ${code}</title>
+      <style>
+        body{ font-family:'Segoe UI',sans-serif; text-align:center; padding:24px; }
+        .name{ font-size:14px; font-weight:700; margin-bottom:10px; }
+        svg{ max-width:100%; }
+      </style></head>
+      <body>
+        ${name ? `<div class="name">${name}</div>` : ''}
+        ${svgHtml}
+        <script>
+          window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; };
+        <\/script>
+      </body></html>
+    `);
+    printWin.document.close();
+  }
+
+
+  function populateCategoryDatalist(selectedValue){
+    const cats = [...new Set(parts.filter(p=>p.location===activeRoom).map(p=>p.category))].sort((a,b)=>a.localeCompare(b,'th'));
+    if(selectedValue && !cats.includes(selectedValue)) cats.push(selectedValue); // เผื่อกรณีหมวดหมู่ใหม่ที่ยังไม่มีอะไหล่สังกัดอยู่ (มาจากปุ่ม + เพิ่มหมวดหมู่)
+    const sel = document.getElementById('mCategory');
+    sel.innerHTML = cats.map(c=>`<option value="${escapeAttr(c)}">${c}</option>`).join('');
+    if(selectedValue) sel.value = selectedValue;
+  }
+
+  function openAddModal(presetCategory){
+    currentCode = null;
+    pendingImageDataUrl = null;
+    pendingImageFile = null;
+    document.getElementById('modalThumb').innerHTML = DEFAULT_ICON;
+    document.getElementById('modalCode').textContent = 'รายการอะไหล่ใหม่';
+    document.getElementById('mName').value = '';
+    document.getElementById('mModel').value = '';
+    document.getElementById('mBrand').value = '';
+    document.getElementById('mCode').value = '';
+    document.getElementById('mCode').disabled = false;
+    document.getElementById('codeLockNote').style.display = 'none';
+    const presetCat = presetCategory || (activeCategory!=='ทั้งหมด' ? activeCategory : '');
+    populateCategoryDatalist(presetCat);
+    document.getElementById('mLocation').value = activeRoom;
+    document.getElementById('mStorageSpot').value = '';
+    document.getElementById('mWidth').value = '';
+    document.getElementById('mLength').value = '';
+    document.getElementById('mHeight').value = '';
+    document.getElementById('mMin').value = 0;
+    document.getElementById('mMax').value = 0;
+    document.getElementById('mQty').value = 0;
+    document.getElementById('mWithdrawQty').value = '';
+    document.getElementById('mStatus').value = 'ยังไม่ขอซื้อ';
+    document.getElementById('mPoNumber').value = '';
+    document.getElementById('modalMsg').textContent = '';
+    document.getElementById('lastEditNote').textContent = 'รายการใหม่ — ยังไม่เคยบันทึก';
+    document.getElementById('setQtyLabel').textContent = 'จำนวนเริ่มต้น';
+    document.getElementById('modeToggleWrap').style.display = 'none';
+    document.getElementById('saveBtn').textContent = 'เพิ่มอะไหล่';
+    document.getElementById('deleteBtnWrap').style.display = 'none';
+    toggleStatusField();
+    setMode('set');
+    renderBarcode();
+    checkCodeDuplicate();
+    checkModelDuplicate();
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('itemModal').scrollTop = 0;
+    requestAnimationFrame(()=>{ document.getElementById('itemModal').scrollTop = 0; });
+  }
+
+  function openModal(code){
+    const p = parts.find(x=>x.code===code);
+    if(!p) return;
+    currentCode = code;
+    pendingImageDataUrl = null;
+    pendingImageFile = null;
+    document.getElementById('modalThumb').innerHTML = p.imageUrl ? `<img src="${p.imageUrl}" style="width:100%;height:100%;object-fit:cover;">` : iconFor(p);
+    document.getElementById('modalCode').textContent = p.category + ' · หน่วย: ' + p.unit;
+    document.getElementById('mName').value = p.name;
+    document.getElementById('mModel').value = p.model || '';
+    document.getElementById('mBrand').value = p.brand || '';
+    document.getElementById('mCode').value = p.code;
+    const isAdmin = currentUser && currentUser.role === 'admin';
+    document.getElementById('mCode').disabled = !isAdmin;
+    document.getElementById('codeLockNote').style.display = isAdmin ? 'none' : 'block';
+    populateCategoryDatalist(p.category);
+    document.getElementById('mLocation').value = p.location;
+    document.getElementById('mStorageSpot').value = p.storageSpot || '';
+    document.getElementById('mWidth').value = (p.width ?? '');
+    document.getElementById('mLength').value = (p.length ?? '');
+    document.getElementById('mHeight').value = (p.height ?? '');
+    renderBarcode();
+    checkCodeDuplicate();
+    checkModelDuplicate();
+    document.getElementById('mMin').value = p.min;
+    document.getElementById('mMax').value = (p.max===null || p.max===undefined) ? '' : p.max;
+    document.getElementById('mQty').value = p.qty;
+    document.getElementById('mWithdrawQty').value = '';
+    document.getElementById('mStatus').value = p.status;
+    document.getElementById('mPoNumber').value = p.poNumber;
+    document.getElementById('modalMsg').textContent = '';
+    document.getElementById('lastEditNote').textContent = `แก้ไขล่าสุด: ${p.updatedAt} โดย ${p.updatedBy}`;
+    document.getElementById('setQtyLabel').textContent = 'จำนวนคงเหลือวันนี้';
+    document.getElementById('modeToggleWrap').style.display = 'flex';
+    document.getElementById('saveBtn').textContent = 'บันทึก';
+    document.getElementById('deleteBtnWrap').style.display = isAdmin ? 'flex' : 'none';
+    toggleStatusField();
+    setMode('set');
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('itemModal').scrollTop = 0;
+    requestAnimationFrame(()=>{ document.getElementById('itemModal').scrollTop = 0; });
+  }
+  function closeModal(){ document.getElementById('overlay').classList.remove('show'); currentCode=null; }
+
+  function openImageLightbox(){
+    const thumbEl = document.getElementById('modalThumb');
+    const img = thumbEl.querySelector('img');
+    if(!img) return; // ยังไม่มีรูปจริง (แสดงไอคอนเริ่มต้นอยู่) ไม่ต้องขยาย
+    document.getElementById('lightboxImg').src = img.src;
+    document.getElementById('imageLightbox').classList.add('show');
+  }
+  function closeImageLightbox(){
+    document.getElementById('imageLightbox').classList.remove('show');
+  }
+
+  async function deletePart(){
+    if(!currentUser || currentUser.role !== 'admin') return; // เฉพาะ admin เท่านั้น
+    const p = parts.find(x=>x.code===currentCode);
+    if(!p) return;
+    if(!confirm(`ยืนยันลบ "${p.name}" (${p.code})? การกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+    const msg = document.getElementById('modalMsg');
+    msg.textContent = 'กำลังลบ...';
+    msg.className = '';
+    try{
+      const { error } = await supabaseClient.from('parts').delete().eq('code', p.code);
+      if(error) throw error;
+      if(p.imageUrl) deleteStorageImage(p.imageUrl);
+      parts = parts.filter(x=>x.code!==p.code);
+      logActivity('ลบอะไหล่', p, `ลบ ${p.name} (${p.code}) ออกจากระบบ`);
+      closeModal();
+      renderRoomTabs();
+      renderCategories();
+      applyFilters();
+    }catch(e){
+      console.error('ลบอะไหล่ไม่สำเร็จ', e);
+      msg.textContent = '⚠ ลบไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ');
+      msg.className = 'err';
+    }
+  }
+
+  // ---------- สรุปคำขอซื้อ (รายวัน/รายเดือน/รายปี) ----------
+  let lastPurchaseSummaryRows = [];
+  let lastPurchaseSummaryLabel = '';
+
+  function onPurchaseSummaryPeriodChange(){
+    const period = document.getElementById('purchaseSummaryPeriod').value;
+    document.getElementById('purchaseSummaryDateDay').style.display = period==='day' ? 'block' : 'none';
+    document.getElementById('purchaseSummaryDateMonth').style.display = period==='month' ? 'block' : 'none';
+    document.getElementById('purchaseSummaryDateYear').style.display = period==='year' ? 'block' : 'none';
+    document.getElementById('purchaseSummaryDateLabel').textContent = period==='day' ? 'วันที่' : period==='month' ? 'เดือน' : 'ปี';
+  }
+  function openPurchaseSummaryModal(){
+    const today = new Date();
+    document.getElementById('purchaseSummaryPeriod').value = 'day';
+    document.getElementById('purchaseSummaryDateDay').value = today.toISOString().slice(0,10);
+    document.getElementById('purchaseSummaryDateMonth').value = today.toISOString().slice(0,7);
+    document.getElementById('purchaseSummaryDateYear').value = today.getFullYear();
+    onPurchaseSummaryPeriodChange();
+    document.getElementById('purchaseSummarySummary').innerHTML = '';
+    document.getElementById('purchaseSummaryList').innerHTML = '';
+    document.getElementById('purchaseSummaryOverlay').classList.add('show');
+    runPurchaseSummary();
+  }
+  function closePurchaseSummaryModal(){ document.getElementById('purchaseSummaryOverlay').classList.remove('show'); }
+
+  async function runPurchaseSummary(){
+    const period = document.getElementById('purchaseSummaryPeriod').value;
+    let startDate, endDate, labelText;
+    if(period==='day'){
+      const v = document.getElementById('purchaseSummaryDateDay').value;
+      if(!v) return;
+      startDate = new Date(v + 'T00:00:00');
+      endDate = new Date(startDate); endDate.setDate(endDate.getDate()+1);
+      labelText = 'วันที่ ' + startDate.toLocaleDateString('th-TH');
+    } else if(period==='month'){
+      const v = document.getElementById('purchaseSummaryDateMonth').value;
+      if(!v) return;
+      const parts2 = v.split('-').map(Number);
+      startDate = new Date(parts2[0], parts2[1]-1, 1);
+      endDate = new Date(parts2[0], parts2[1], 1);
+      labelText = 'เดือน ' + startDate.toLocaleDateString('th-TH', {month:'long', year:'numeric'});
+    } else {
+      const y = Number(document.getElementById('purchaseSummaryDateYear').value);
+      if(!y) return;
+      startDate = new Date(y, 0, 1);
+      endDate = new Date(y+1, 0, 1);
+      labelText = 'ปี ' + y;
+    }
+
+    const summaryEl = document.getElementById('purchaseSummarySummary');
+    const listEl = document.getElementById('purchaseSummaryList');
+    summaryEl.textContent = 'กำลังโหลด...';
+    listEl.innerHTML = '';
+    try{
+      const rawRows = await fetchAllRows(() => supabaseClient
+        .from('purchase_requests')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .lt('created_at', endDate.toISOString())
+        .order('created_at', { ascending:true }));
+      // เรียงใหม่ไปเก่าไว้ให้เหมือนเดิมหลังจากดึงมาครบทุกหน้าแล้ว (ตอนดึงต้องเรียงเก่าไปใหม่เพื่อให้แบ่งหน้าได้ถูกต้อง)
+      const rows = rawRows.slice().reverse().map(fromPurchaseDbRow);
+      lastPurchaseSummaryRows = rows;
+      lastPurchaseSummaryLabel = labelText;
+      if(!rows.length){
+        summaryEl.innerHTML = `<b>${labelText}</b> — ไม่มีการขอซื้อในช่วงนี้`;
+        listEl.innerHTML = '';
+        return;
+      }
+      const byUser = {};
+      const byStatus = {pending:0, purchased:0, received:0};
+      rows.forEach(r=>{
+        const uName = r.requestedByDisplay || r.requestedBy || 'ไม่ทราบผู้ขอ';
+        byUser[uName] = (byUser[uName]||0) + 1;
+        byStatus[purchaseStatusOf(r)]++;
+      });
+      const userSummary = Object.entries(byUser).map(([u,c])=>`${u}: ${c} รายการ`).join(' · ');
+      const statusSummary = `รอดำเนินการ: ${byStatus.pending} · ซื้อแล้ว รอรับของ: ${byStatus.purchased} · รับของแล้ว: ${byStatus.received}`;
+      summaryEl.innerHTML = `<b>${labelText}</b> — รวม ${rows.length} รายการขอซื้อ<br><span style="color:var(--sub)">${userSummary}</span><br><span style="color:var(--sub)">${statusSummary}</span>`;
+      listEl.innerHTML = rows.map(r=>{
+        const t = r.createdAt ? new Date(r.createdAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '';
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--line);">
+          <b>${r.itemName}</b> ${purchaseStatusBadge(r)}<br>
+          <span style="color:var(--sub);">ขอโดย ${r.requestedByDisplay||'-'} ${r.damageDescription ? ('· ' + r.damageDescription) : ''}</span><br>
+          <span style="color:#aaa;font-size:11px;">${t}</span>
+        </div>`;
+      }).join('');
+    }catch(e){
+      console.error(e);
+      summaryEl.textContent = '⚠ โหลดสรุปไม่สำเร็จ';
+    }
+  }
+
+  function exportPurchaseSummaryCSV(){
+    if(!lastPurchaseSummaryRows.length){ alert('ยังไม่มีข้อมูลสรุป กรุณากด "ดูสรุป" ก่อน'); return; }
+    const header = ['วันที่-เวลา','ผู้ขอ','ชื่ออะไหล่/เครื่องมือ','เหตุผล/อาการชำรุด','สถานะ'];
+    const csvRows = [header.join(',')];
+    const statusLabel = {pending:'รอดำเนินการ', purchased:'ซื้อแล้ว รอรับของ', received:'รับของแล้ว'};
+    lastPurchaseSummaryRows.forEach(r=>{
+      const t = r.createdAt ? new Date(r.createdAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '';
+      const vals = [t, r.requestedByDisplay||r.requestedBy||'', r.itemName||'', (r.damageDescription||''), statusLabel[purchaseStatusOf(r)]];
+      csvRows.push(vals.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+    });
+    const csvContent = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `สรุปคำขอซื้อ-${lastPurchaseSummaryLabel.replace(/\s+/g,'_')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('mStatus').addEventListener('change', toggleStatusField);
+  function toggleStatusField(){
+    const v = document.getElementById('mStatus').value;
+    const needsPo = v.indexOf('PR')!==-1 || v.indexOf('PO')!==-1;
+    document.getElementById('mPoWrap').style.display = needsPo ? 'block':'none';
+    if(!needsPo) document.getElementById('mPoNumber').value = '';
+  }
+
+  async function saveModal(){
+    const isNew = (currentCode === null);
+    const p = isNew ? null : parts.find(x=>x.code===currentCode);
+    const status = document.getElementById('mStatus').value;
+    const needsPo = status.indexOf('PR')!==-1 || status.indexOf('PO')!==-1;
+    const poNumber = needsPo ? document.getElementById('mPoNumber').value.trim() : '';
+    const updatedBy = currentUser ? currentUser.displayName : 'ไม่ทราบผู้ใช้';
+    const msg = document.getElementById('modalMsg');
+
+    const name = document.getElementById('mName').value.trim();
+    if(!name){ msg.textContent='กรุณาใส่ชื่ออะไหล่'; msg.className='err'; return; }
+
+    const model = document.getElementById('mModel').value.trim();
+    const brand = document.getElementById('mBrand').value.trim();
+
+    const category = document.getElementById('mCategory').value.trim();
+    if(!category){ msg.textContent='กรุณาใส่หมวดหมู่'; msg.className='err'; return; }
+
+    const newCode = document.getElementById('mCode').value.trim();
+    if(!newCode){ msg.textContent='กรุณาใส่รหัสสินค้า'; msg.className='err'; return; }
+    if(!isNew && newCode !== p.code && (!currentUser || currentUser.role !== 'admin')){
+      msg.textContent = 'เฉพาะผู้ดูแลระบบเท่านั้นที่แก้ไขรหัสสินค้าได้';
+      msg.className = 'err';
+      return;
+    }
+    const codeTaken = parts.some(x => x.code.toLowerCase()===newCode.toLowerCase() && (isNew || x.code !== p.code));
+    if(codeTaken){
+      msg.textContent = 'รหัสนี้ถูกใช้กับอะไหล่ชิ้นอื่นแล้ว';
+      msg.className='err';
+      return;
+    }
+
+    let uploadedImage = null;
+    if(pendingImageFile){
+      msg.textContent = 'กำลังอัปโหลดรูปภาพ...';
+      msg.className = '';
+      try{
+        uploadedImage = await uploadPendingImage(newCode, p ? p.imageUrl : null, p ? p.thumbUrl : null);
+      }catch(e){
+        const detail = (e && e.message) ? e.message : 'ไม่ทราบสาเหตุ';
+        msg.textContent = '⚠ อัปโหลดรูปภาพไม่สำเร็จ: ' + detail + ' — ยกเลิกการบันทึก';
+        msg.className = 'err';
+        return;
+      }
+    }
+
+    let newQty;
+    if(!isNew && currentMode==='withdraw'){
+      const w = Number(document.getElementById('mWithdrawQty').value);
+      if(document.getElementById('mWithdrawQty').value===''||isNaN(w)||w<=0){
+        msg.textContent='กรุณากรอกจำนวนที่เบิกเป็นตัวเลขมากกว่า 0';
+        msg.className='err';
+        return;
+      }
+      if(w > p.qty){
+        msg.textContent = `เบิกไม่ได้ — มีคงเหลือแค่ ${p.qty} ${p.unit}`;
+        msg.className='err';
+        return;
+      }
+      newQty = p.qty - w;
+    } else {
+      const qty = document.getElementById('mQty').value;
+      if(qty===''||isNaN(qty)){ msg.textContent='กรุณากรอกจำนวนเป็นตัวเลข'; msg.className='err'; return; }
+      newQty = Number(qty);
+    }
+
+    const min = Number(document.getElementById('mMin').value) || 0;
+    const maxRaw = document.getElementById('mMax').value;
+    const max = maxRaw === '' ? null : Number(maxRaw); // ปล่อยว่าง = ไม่จำกัด Max
+    const location = document.getElementById('mLocation').value;
+    const storageSpot = document.getElementById('mStorageSpot').value.trim();
+    const widthVal = document.getElementById('mWidth').value;
+    const lengthVal = document.getElementById('mLength').value;
+    const heightVal = document.getElementById('mHeight').value;
+    const width = widthVal === '' ? null : Number(widthVal);
+    const length = lengthVal === '' ? null : Number(lengthVal);
+    const height = heightVal === '' ? null : Number(heightVal);
+    const prevQty = isNew ? null : p.qty;
+    const oldCode = isNew ? null : p.code;
+    const now = new Date();
+    const nowStr = now.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+
+    if(isNew){
+      const newPart = {
+        code:newCode, category:category, name:name, model:model, brand:brand, unit:'ตัว',
+        min:min, max:max, qty:newQty, status:status, poNumber:poNumber,
+        updatedAt:nowStr, updatedBy:updatedBy,
+        imageUrl: uploadedImage ? uploadedImage.imageUrl : null,
+        thumbUrl: uploadedImage ? uploadedImage.thumbUrl : null,
+        location:location, storageSpot:storageSpot,
+        width:width, length:length, height:height
+      };
+      parts.push(newPart);
+      msg.textContent = 'เพิ่มอะไหล่สำเร็จ';
+      msg.className = 'ok';
+      persistParts([newPart]);
+      logActivity('เพิ่มอะไหล่ใหม่', newPart, `เพิ่ม ${newPart.name} จำนวนเริ่มต้น ${newPart.qty} ${newPart.unit} ที่ห้อง ${newPart.location}`, newPart.qty);
+      setTimeout(()=>{
+        closeModal();
+        activeRoom = newPart.location;
+        activeCategory = newPart.category;
+        renderRoomTabs(); renderCategories(); applyFilters();
+        if(document.getElementById('tableViewWrap').style.display !== 'none') renderStockTable();
+      }, 500);
+      return;
+    }
+
+    p.code = newCode;
+    p.category = category;
+    p.name = name;
+    p.model = model;
+    p.brand = brand;
+    p.min = min;
+    p.max = max;
+    p.location = location;
+    p.storageSpot = storageSpot;
+    p.width = width;
+    p.length = length;
+    p.height = height;
+    if(uploadedImage){ p.imageUrl = uploadedImage.imageUrl; p.thumbUrl = uploadedImage.thumbUrl; }
+    p.status = status;
+    p.poNumber = poNumber;
+    p.updatedBy = updatedBy;
+    p.updatedAt = nowStr;
+
+    const qtyDelta = newQty - prevQty;
+    const codeUnchanged = (oldCode === newCode);
+
+    if(qtyDelta !== 0 && codeUnchanged){
+      // รหัสไม่เปลี่ยน → ปรับ qty แบบ atomic ที่ DB โดยตรง กันชนกับคนอื่นที่แก้พร้อมกัน
+      try{
+        const updatedRow = await adjustPartQty(oldCode, qtyDelta, nowStr, updatedBy);
+        p.qty = updatedRow.qty; // ใช้ค่าจริงจาก DB เผื่อมีคนแก้พร้อมกัน
+      }catch(e){
+        console.error('ปรับยอดไม่สำเร็จ', e);
+        const errMsg = (e && e.message) ? e.message : 'ไม่ทราบสาเหตุ';
+        msg.textContent = '⚠ บันทึกไม่สำเร็จ: ' + errMsg;
+        msg.className = 'err';
+        return;
+      }
+      persistParts([p], { excludeQty: true }); // ฟิลด์อื่นบันทึกแยก ไม่แตะ qty ซ้ำ
+    } else {
+      // รหัสถูกเปลี่ยน (เป็นการ insert แถวใหม่ + ลบแถวเก่า) หรือ qty ไม่เปลี่ยน → บันทึกแบบเดิมได้ ไม่มีความเสี่ยงชนกัน
+      p.qty = newQty;
+      persistParts([p]);
+    }
+
+    msg.textContent = currentMode==='withdraw' ? 'เบิกสำเร็จ' : 'บันทึกสำเร็จ';
+    msg.className = 'ok';
+    if(oldCode !== null && oldCode !== newCode){
+      // รหัสสินค้าถูกเปลี่ยน — ต้องลบแถวเก่าออกจากฐานข้อมูล ไม่งั้นจะเหลือค้างเป็นรายการซ้ำ
+      supabaseClient.from('parts').delete().eq('code', oldCode).then(({error})=>{
+        if(error) console.error('ลบรายการรหัสเดิมไม่สำเร็จ', error);
+      });
+    }
+    // ใช้ p.qty (ค่าจริงหลังบันทึก) แทน newQty (ค่าที่ตั้งใจไว้ตอนกด) ในการ log
+    // เผื่อกรณีมีคนอื่นแก้ยอดพร้อมกัน ผลจริงหลัง atomic adjust อาจต่างจากที่คำนวณไว้ตอนแรกเล็กน้อย
+    if(currentMode==='withdraw'){
+      logActivity('เบิกอะไหล่', p, `เบิก ${prevQty - p.qty} ${p.unit} (จาก ${prevQty} เหลือ ${p.qty})`, prevQty - p.qty);
+    } else if(p.qty > prevQty){
+      logActivity('เติมอะไหล่', p, `เติม ${p.qty - prevQty} ${p.unit} (จาก ${prevQty} เป็น ${p.qty})`, p.qty - prevQty);
+    } else if(p.qty < prevQty){
+      // ปรับยอดลดลงผ่านช่อง "ตั้งยอดคงเหลือ" โดยตรง (ไม่ได้กดปุ่มเบิก) — แยกประเภทออกจากการเบิกจริง
+      logActivity('ปรับยอดลดลง', p, `ปรับยอดจาก ${prevQty} เหลือ ${p.qty} ${p.unit} (ไม่ได้ผ่านปุ่มเบิก)`, prevQty - p.qty);
+    } else {
+      logActivity('แก้ไข/ปรับยอด', p, `ปรับจำนวนจาก ${prevQty} เป็น ${p.qty} ${p.unit}`, prevQty - p.qty);
+    }
+    setTimeout(()=>{
+      closeModal(); renderRoomTabs(); renderCategories(); applyFilters();
+      if(document.getElementById('tableViewWrap').style.display !== 'none') renderStockTable();
+    }, 500);
+  }
+
+  // persistParts: บันทึกเฉพาะแถวที่เปลี่ยนจริง (ไม่ใช่ upsert ทั้งตารางทุกครั้ง)
+  // ส่ง rowsToPersist เป็น array ของ part object ที่ต้องการอัปเดต — ถ้าไม่ส่งจะ fallback ไปอัปเดตทั้งหมด (ใช้เฉพาะกรณีจำเป็นจริงๆ)
+  async function persistParts(rowsToPersist, opts){
+    const statusEl = document.getElementById('syncStatus');
+    const rows = rowsToPersist || parts;
+    if(!rows.length) return;
+    const excludeQty = opts && opts.excludeQty; // true เมื่อ qty ถูกอัปเดตแบบ atomic แยกไปแล้วผ่าน adjustPartQty()
+    try{
+      const payload = rows.map(r=>{
+        const row = toDbRow(r);
+        if(excludeQty) delete row.qty; // ไม่ส่ง qty ซ้ำ กัน upsert ทับค่าที่เพิ่งอัปเดตแบบ atomic
+        return row;
+      });
+      const { error } = await supabaseClient.from('parts').upsert(payload, { onConflict: 'code' });
+      if(error) throw error;
+      if(statusEl) statusEl.textContent = 'บันทึกล่าสุด: ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){
+      console.error('บันทึกข้อมูลไม่สำเร็จ', e);
+      if(statusEl) statusEl.textContent = '⚠ บันทึกไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต/การตั้งค่า Supabase';
+    }
+  }
+
+  // ปรับยอดคงเหลือแบบ atomic ที่ฐานข้อมูลโดยตรง (บวก/ลบจากค่าจริงล่าสุดใน DB ไม่ใช่ค่าที่ค้างอยู่ในเครื่อง)
+  // ป้องกัน sync conflict เวลามีคนแก้ยอดชิ้นเดียวกันพร้อมกันจากคนละเครื่อง
+  async function adjustPartQty(code, delta, updatedAtStr, updatedByStr){
+    const { data, error } = await supabaseClient.rpc('adjust_part_qty', {
+      p_code: code, p_delta: delta, p_updated_at: updatedAtStr, p_updated_by: updatedByStr
+    });
+    if(error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(!row) throw new Error('ไม่พบแถวที่อัปเดต');
+    return fromDbRow(row);
+  }
+
+  // ล้างข้อมูลเลข PO ที่ค้างอยู่จากบั๊กเดิม (สถานะไม่ใช่ PR/PO แต่ยังมีเลข PO ติดอยู่)
+  // รันอัตโนมัติทุกครั้งที่โหลด/รีเฟรชข้อมูล เพื่อบังคับล้างให้ทุกคนโดยไม่ต้องเปิดทีละรายการ
+  async function cleanupStalePoNumbers(){
+    const stale = parts.filter(p=>{
+      const s = p.status || '';
+      const needsPo = s.indexOf('PR')!==-1 || s.indexOf('PO')!==-1;
+      return !needsPo && p.poNumber;
+    });
+    if(!stale.length) return;
+    stale.forEach(p=>{ p.poNumber = ''; });
+    try{
+      await persistParts(stale);
+      console.log(`ล้างเลข PO ที่ค้างอยู่สำเร็จ ${stale.length} รายการ`);
+    }catch(e){
+      console.error('ล้างเลข PO ที่ค้างไม่สำเร็จ', e);
+    }
+  }
+
+  async function reloadFromStorage(){
+    const statusEl = document.getElementById('syncStatus');
+    if(statusEl) statusEl.textContent = 'กำลังรีเฟรช...';
+    try{
+      const { data, error } = await supabaseClient.from('parts').select('*').order('code');
+      if(error) throw error;
+      parts = (data || []).map(fromDbRow);
+      await cleanupStalePoNumbers();
+      renderRoomTabs();
+      renderCategories();
+      applyFilters();
+      if(statusEl) statusEl.textContent = 'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){
+      console.error('โหลดข้อมูลไม่สำเร็จ', e);
+      if(statusEl) statusEl.textContent = '⚠ โหลดข้อมูลไม่สำเร็จ';
+    }
+  }
+
+  async function initApp(){
+    const statusEl = document.getElementById('syncStatus');
+    try{
+      const { data, error } = await supabaseClient.from('parts').select('*').order('code');
+      if(error) throw error;
+      if(data && data.length){
+        parts = data.map(fromDbRow);
+        await cleanupStalePoNumbers();
+      } else {
+        // ตารางว่าง (ครั้งแรก) — เติมข้อมูลตัวอย่างตั้งต้นลงฐานข้อมูล
+        const { error: seedErr } = await supabaseClient.from('parts').upsert(parts.map(toDbRow), { onConflict: 'code' });
+        if(seedErr) throw seedErr;
+      }
+      if(statusEl) statusEl.textContent = 'เชื่อมต่อฐานข้อมูลสำเร็จ · ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){
+      console.error('เชื่อมต่อฐานข้อมูลไม่สำเร็จ ใช้ข้อมูลตัวอย่างแบบไม่บันทึกแทน', e);
+      if(statusEl) statusEl.textContent = '⚠ เชื่อมต่อ Supabase ไม่สำเร็จ ตรวจสอบตาราง/policy';
+    }
+    renderRoomTabs();
+    renderCategories();
+    applyFilters();
+    subscribePartsRealtime();
+  }
+
+  // initApp() is now triggered from doLogin() after a successful login
+
+  let partsChannel = null;
+  // ฟังการเปลี่ยนแปลงตาราง parts แบบเรียลไทม์ — พอมีคนอื่นแก้ยอด/สถานะ ข้อมูลในเครื่องเราจะอัปเดตตามทันที
+  // โดยไม่ต้องรอกดรีเฟรชเอง ช่วยลดโอกาสที่จะเห็น/แก้จากค่าที่เก่าไปแล้ว (ต้นตอของ sync conflict)
+  function subscribePartsRealtime(){
+    if(partsChannel) return; // subscribe ซ้ำแค่ครั้งเดียวพอ
+    partsChannel = supabaseClient
+      .channel('parts-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'parts' }, (payload) => {
+        if(payload.eventType === 'DELETE'){
+          const delCode = payload.old && payload.old.code;
+          if(!delCode) return;
+          parts = parts.filter(x => x.code !== delCode);
+        } else {
+          const updated = fromDbRow(payload.new);
+          const idx = parts.findIndex(x => x.code === updated.code);
+          if(idx >= 0) parts[idx] = updated; else parts.push(updated);
+        }
+        // รีเรนเดอร์เฉพาะวิวที่กำลังเปิดอยู่ ไม่รบกวนช่องที่ผู้ใช้กำลังพิมพ์ค้างอยู่ในหน้าอื่น
+        applyFilters();
+        if(document.getElementById('tableViewWrap').style.display !== 'none') renderStockTable();
+      })
+      .subscribe();
+  }
+
+  // ล็อกการเลื่อนพื้นหลังของหน้าเว็บเมื่อมีหน้าต่าง (overlay) เปิดอยู่อย่างน้อย 1 อัน
+  // ให้เลื่อนได้เฉพาะภายในตัวหน้าต่างเอง แล้วปลดล็อกอัตโนมัติเมื่อปิดครบทุกหน้าต่าง
+  (function(){
+    let savedScrollY = 0;
+    function updateBodyScrollLock(){
+      const anyOpen = document.querySelector('.overlay.show') !== null;
+      if(anyOpen && document.body.style.position !== 'fixed'){
+        savedScrollY = window.scrollY || window.pageYOffset || 0;
+        document.body.style.position = 'fixed';
+        document.body.style.top = (-savedScrollY) + 'px';
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+      } else if(!anyOpen && document.body.style.position === 'fixed'){
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        window.scrollTo(0, savedScrollY);
+      }
+    }
+    function watchOverlays(){
+      document.querySelectorAll('.overlay').forEach(function(el){
+        new MutationObserver(updateBodyScrollLock).observe(el, { attributes:true, attributeFilter:['class'] });
+      });
+      updateBodyScrollLock();
+    }
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', watchOverlays);
+    } else {
+      watchOverlays();
+    }
+  })();
+</script>
+
+<button id="backToTopBtn" onclick="window.scrollTo({top:0, behavior:'smooth'})" title="กลับขึ้นบนสุด">↑</button>
+</body>
+</html>
