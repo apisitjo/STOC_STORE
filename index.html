@@ -2,7 +2,16 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>เช็คสตอคอะไหล่</title>
+<!-- ===== PWA: ทำให้ติดตั้งเป็นแอปได้ (Add to Home Screen) ===== -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0b1017">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="สตอคอะไหล่">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
   // ตั้งค่าธีมก่อน CSS วาดผล เพื่อกันหน้าจอกะพริบสลับสี (FOUC)
@@ -7054,5 +7063,43 @@
 </script>
 
 <button id="backToTopBtn" onclick="window.scrollTo({top:0, behavior:'smooth'})" title="กลับขึ้นบนสุด">↑</button>
+
+<!-- ===== PWA: ปุ่มติดตั้งแอป (โผล่เฉพาะตอนเบราว์เซอร์อนุญาตให้ติดตั้งได้) ===== -->
+<button id="pwaInstallBtn" onclick="triggerPwaInstall()" style="display:none;position:fixed;left:20px;bottom:20px;z-index:900;padding:10px 16px;border-radius:999px;border:1px solid var(--line);background:var(--amber);color:#1a1206;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);">📲 ติดตั้งแอป</button>
+<script>
+  // ลงทะเบียน Service Worker (ทำให้ติดตั้งเป็นแอปได้ + แคชหน้าเปลือกแอปไว้เปิดเร็วขึ้น)
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(err){
+        console.error('ลงทะเบียน Service Worker ไม่สำเร็จ', err);
+      });
+    });
+  }
+
+  // ดักอีเวนต์ที่เบราว์เซอร์ถามว่า "ติดตั้งแอปนี้ไหม" แล้วเก็บไว้เอง
+  // เพื่อโชว์ปุ่ม "ติดตั้งแอป" ของเราเองแทนป้ายเริ่มต้นของเบราว์เซอร์ (คุมจังหวะ/ดีไซน์ได้)
+  let deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    const btn = document.getElementById('pwaInstallBtn');
+    if(btn) btn.style.display = 'block';
+  });
+  function triggerPwaInstall(){
+    const btn = document.getElementById('pwaInstallBtn');
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.finally(function(){
+      deferredInstallPrompt = null;
+      if(btn) btn.style.display = 'none';
+    });
+  }
+  // ถ้าติดตั้งไปแล้ว (เปิดแบบ standalone) ไม่ต้องโชว์ปุ่ม
+  window.addEventListener('appinstalled', function(){
+    const btn = document.getElementById('pwaInstallBtn');
+    if(btn) btn.style.display = 'none';
+    deferredInstallPrompt = null;
+  });
+</script>
 </body>
 </html>
