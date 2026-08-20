@@ -1276,10 +1276,20 @@
     background:rgba(10,14,24,.78); border:1px solid rgba(139,92,246,.55); color:#e2d9ff;
     font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:8px;
   }
+  .pv-upload-actions{ display:flex; gap:8px; flex-wrap:wrap; }
   .pv-upload-label{
     display:none; align-items:center; gap:5px; font-size:12px; color:#9db2da; cursor:pointer; margin-top:9px;
   }
-  .pv-editing .pv-upload-label{ display:inline-flex; }
+  .pv-editing .pv-upload-label.pv-upload-label-desktop{ display:inline-flex; }
+  /* บนมือถือ input accept="image/*" ธรรมดาจะเปิด picker กลางๆ ของ OS (กล้อง/คลังปนกัน) ไม่ชัดเจนว่ากดแล้วจะได้อะไร
+     เลยแยกเป็น 2 ปุ่มชัดเจนแทน: "ถ่ายภาพ" (บังคับเปิดกล้องตรงด้วย capture="environment") กับ "เลือกจากคลัง" (เปิดคลังรูปตรงๆ) */
+  .pv-upload-label.pv-upload-label-camera,
+  .pv-upload-label.pv-upload-label-gallery{ display:none; }
+  @media (max-width:900px){
+    .pv-editing .pv-upload-label.pv-upload-label-desktop{ display:none; }
+    .pv-editing .pv-upload-label.pv-upload-label-camera,
+    .pv-editing .pv-upload-label.pv-upload-label-gallery{ display:inline-flex; flex:1; justify-content:center; }
+  }
 
   .pv-thumbs{ display:flex; gap:8px; margin-top:9px; }
   .pv-thumb{
@@ -2420,10 +2430,20 @@
             <div class="pv-mainimg" id="modalThumb" onclick="openImageLightbox()"></div>
             <div class="pv-zoom-btn" onclick="openImageLightbox()">🔍 ดูภาพขยาย</div>
           </div>
-          <label class="pv-upload-label">
-            📷 เปลี่ยน/เพิ่มรูปภาพ
-            <input type="file" id="mImageFile" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
-          </label>
+          <div class="pv-upload-actions">
+            <label class="pv-upload-label pv-upload-label-desktop">
+              📷 เปลี่ยน/เพิ่มรูปภาพ
+              <input type="file" id="mImageFile" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
+            </label>
+            <label class="pv-upload-label pv-upload-label-camera">
+              📷 ถ่ายภาพ
+              <input type="file" id="mImageFileCamera" accept="image/*" capture="environment" style="display:none;" onchange="handleImageSelect(event)">
+            </label>
+            <label class="pv-upload-label pv-upload-label-gallery">
+              🖼️ เลือกจากคลัง
+              <input type="file" id="mImageFileGallery" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
+            </label>
+          </div>
 
           <div class="pv-thumbs" id="pvThumbs" style="display:none;"></div>
 
