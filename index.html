@@ -2787,7 +2787,7 @@
     }
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
     if(libraryLoadError){
       const msg = document.getElementById('loginMsg');
       if(msg){
@@ -2801,6 +2801,24 @@
     // ถ้ามีเซสชันที่ยังไม่หมดอายุ (ใช้งานล่าสุดไม่เกิน 30 นาที) ให้เข้าระบบต่อเลยโดยไม่ต้องล็อกอินใหม่
     const savedUser = loadSession();
     if(savedUser){
+      // ถ้าเซสชันนี้มี token (มาจากระบบ 1 บัญชี/1 เครื่อง) เช็คกับฐานข้อมูลก่อนว่ายังเป็นเครื่องที่ active อยู่จริงมั้ย
+      // เผื่อกรณีปิดแท็บ/แอปไปแล้วมีคนอื่นล็อกอินบัญชีนี้จากเครื่องอื่นระหว่างนั้น จะได้ไม่หลุดเข้าใช้งานซ้อนกัน
+      if(savedUser.sessionToken && supabaseClient){
+        try{
+          const { data: stillActive, error } = await supabaseClient.rpc('check_session', {
+            p_username: savedUser.username, p_session_token: savedUser.sessionToken
+          });
+          if(!error && stillActive === false){
+            clearSession();
+            const msg = document.getElementById('loginMsg');
+            if(msg){
+              msg.textContent = '⚠ บัญชีนี้ถูกเข้าสู่ระบบจากอุปกรณ์อื่นระหว่างที่ปิดหน้านี้ไว้ กรุณาเข้าสู่ระบบใหม่';
+              msg.style.color = '#c0392b';
+            }
+            return;
+          }
+        }catch(e){ /* เช็คไม่ได้ (ออฟไลน์ชั่วคราว/ยังไม่ได้ตั้งค่าฐานข้อมูล) ปล่อยให้เข้าใช้งานต่อไปก่อน */ }
+      }
       enterAppUI(savedUser);
     }else{
       clearSession();
@@ -2875,6 +2893,8 @@
     resetInactivityTimer();
     initApp();
     initPresence();
+    subscribeSessionRealtime();
+    startSessionCheckPolling();
     checkCleanupReminder();
     checkBackupReminder();
   }
@@ -2993,6 +3013,7 @@
             await presenceChannel.track({
               displayName: currentUser.displayName,
               role: currentUser.role,
+              device: currentUser.deviceLabel || '',
               online_at: new Date().toISOString()
             });
           }catch(e){ console.error('ติดตามสถานะออนไลน์ไม่สำเร็จ', e); }
@@ -3004,14 +3025,13 @@
     const bar = document.getElementById('onlineUsersBar');
     const countEl = document.getElementById('onlineCount');
     if(!bar) return;
-    const names = Object.values(state || {})
+    const rows = Object.values(state || {})
       .map(entries => entries && entries[0])
       .filter(Boolean)
-      .map(e => e.displayName || 'ผู้ใช้')
-      .sort((a,b)=>a.localeCompare(b,'th'));
-    if(countEl) countEl.textContent = names.length;
-    bar.innerHTML = names.length
-      ? names.map(n => `<div class="status-row"><span class="dot"></span><span>${n}</span></div>`).join('')
+      .sort((a,b)=>(a.displayName||'').localeCompare(b.displayName||'','th'));
+    if(countEl) countEl.textContent = rows.length;
+    bar.innerHTML = rows.length
+      ? rows.map(e => `<div class="status-row"><span class="dot"></span><span>${escapeHtml(e.displayName || 'ผู้ใช้')}${e.device ? `<span style="opacity:.6;font-size:11px;"> · ${escapeHtml(e.device)}</span>` : ''}</span></div>`).join('')
       : '<div class="online-empty">ไม่มีผู้ใช้งานอื่นออนไลน์</div>';
   }
 
@@ -3028,11 +3048,90 @@
   window.addEventListener('beforeunload', stopPresence);
   // -----------------------------------------------------------------------------------------------
 
+  // ---------- ระบบ "1 บัญชี ใช้งานได้ทีละเครื่อง" — เมื่อล็อกอินเครื่องใหม่ เครื่องเก่าจะถูกออกจากระบบอัตโนมัติ ----------
+  // อาศัยตาราง user_sessions ใน Supabase: 1 แถวต่อ username เก็บ session_token ล่าสุด
+  // ตอนล็อกอิน (start_session) จะเขียนทับ token เดิม แล้วเครื่องเก่าจะรู้ตัวผ่าน 2 ทาง:
+  //   1) Realtime (postgres_changes) แจ้งทันทีที่แถวของ username เราถูกเขียนทับ
+  //   2) Fallback: เช็คซ้ำเป็นระยะๆ เผื่อ Realtime หลุดการเชื่อมต่อ (เช่นสลับแอปนานๆ บนมือถือ)
+  let sessionChannel = null;
+  let sessionCheckInterval = null;
+
+  function subscribeSessionRealtime(){
+    if(!supabaseClient || !currentUser || !currentUser.sessionToken) return;
+    unsubscribeSessionRealtime();
+    sessionChannel = supabaseClient
+      .channel('user-session-' + currentUser.username)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_sessions', filter: `username=eq.${currentUser.username}` }, (payload) => {
+        const newToken = payload.new && payload.new.session_token;
+        if(currentUser && newToken && newToken !== currentUser.sessionToken){
+          forceLogoutOtherDevice(payload.new.device_label);
+        }
+      })
+      .subscribe();
+  }
+
+  function unsubscribeSessionRealtime(){
+    if(sessionChannel){
+      try{ supabaseClient.removeChannel(sessionChannel); }catch(e){}
+      sessionChannel = null;
+    }
+  }
+
+  function startSessionCheckPolling(){
+    stopSessionCheckPolling();
+    sessionCheckInterval = setInterval(async () => {
+      if(!currentUser || !currentUser.sessionToken || !supabaseClient) return;
+      try{
+        const { data: stillActive, error } = await supabaseClient.rpc('check_session', {
+          p_username: currentUser.username, p_session_token: currentUser.sessionToken
+        });
+        if(!error && stillActive === false) forceLogoutOtherDevice();
+      }catch(e){ /* เน็ตหลุดชั่วคราว รอเช็คซ้ำรอบถัดไป */ }
+    }, 45000);
+  }
+
+  function stopSessionCheckPolling(){
+    if(sessionCheckInterval){ clearInterval(sessionCheckInterval); sessionCheckInterval = null; }
+  }
+
+  function forceLogoutOtherDevice(newDeviceLabel){
+    const text = `⚠ บัญชีนี้ถูกเข้าสู่ระบบจาก${newDeviceLabel ? ` "${newDeviceLabel}"` : 'อุปกรณ์อื่น'} ระบบจึงออกจากระบบเครื่องนี้ให้อัตโนมัติ (ใช้งานพร้อมกันได้ทีละเครื่องเท่านั้น)`;
+    doLogout(false, text);
+  }
+  // -----------------------------------------------------------------------------------------------
+
   // ประทับวันที่-เวลาที่ไฟล์นี้ถูกบันทึก/แก้ไขล่าสุดโดยอัตโนมัติ ไม่ต้องแก้เลขเวอร์ชั่นเอง
   // (ทุกครั้งที่ไฟล์นี้ถูก generate ใหม่ ค่านี้จะถูกแทนที่ด้วยวันเวลาปัจจุบัน ณ ตอนบันทึก)
   const APP_VERSION = 'อัปเดตล่าสุด: 2026-08-20 12:00';
   let currentUser = null; // {username, displayName, role, password}
   let appEnterTime = 0;
+
+  // ===== ระบุอุปกรณ์/เบราว์เซอร์ที่ผู้ใช้กำลังเข้าใช้งานอยู่ (ใช้แสดงผลและผูกกับระบบ 1 บัญชี = 1 เครื่องที่ใช้งานได้พร้อมกัน) =====
+  function getDeviceLabel(){
+    const ua = navigator.userAgent || '';
+    let browser = 'เบราว์เซอร์';
+    if(/Edg\//.test(ua)) browser = 'Edge';
+    else if(/OPR\/|Opera/.test(ua)) browser = 'Opera';
+    else if(/FBAN|FBAV/.test(ua)) browser = 'Facebook';
+    else if(/Line\//i.test(ua)) browser = 'LINE';
+    else if(/Instagram/.test(ua)) browser = 'Instagram';
+    else if(/CriOS|Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
+    else if(/FxiOS|Firefox\//.test(ua)) browser = 'Firefox';
+    else if(/Safari\//.test(ua) && !/Chrome|CriOS/.test(ua)) browser = 'Safari';
+    let os = '';
+    if(/iPhone|iPad|iPod/.test(ua)) os = 'iOS';
+    else if(/Android/.test(ua)) os = 'Android';
+    else if(/Windows/.test(ua)) os = 'Windows';
+    else if(/Mac OS X/.test(ua)) os = 'Mac';
+    else if(/Linux/.test(ua)) os = 'Linux';
+
+    // จำแนกประเภทเครื่องคร่าวๆ ว่าเป็นมือถือ/แท็บเล็ต/คอมพิวเตอร์ — ใช้ user-agent เดา (เบราว์เซอร์ไม่ยอมให้เว็บรู้ยี่ห้อ-รุ่นเครื่องจริงได้)
+    let deviceType = 'คอมพิวเตอร์';
+    if(/iPad|Android(?!.*Mobi)/.test(ua) && !/Mobi/.test(ua)) deviceType = 'แท็บเล็ต';
+    else if(/Mobi|iPhone|iPod/.test(ua)) deviceType = 'มือถือ';
+
+    return `${deviceType} (${browser}${os ? ' บน ' + os : ''})`;
+  }
 
   async function doLogin(){
     const u = document.getElementById('loginUsername').value.trim();
@@ -3058,7 +3157,17 @@
         return;
       }
       const row = data[0];
-      const user = { username: row.username, displayName: row.display_name, role: row.role, password: pw };
+      const user = { username: row.username, displayName: row.display_name, role: row.role, password: pw, sessionToken: null, deviceLabel: getDeviceLabel() };
+
+      // เริ่ม session ใหม่บนเครื่องนี้ — ถ้ามีเครื่องอื่นเข้าใช้บัญชีนี้ค้างอยู่ จะถูกตัดออกอัตโนมัติ (เช็คด้วย session_token ที่เปลี่ยนไป)
+      // ถ้ายังไม่ได้สร้างฟังก์ชัน start_session ในฐานข้อมูล (error) จะปล่อยให้เข้าใช้งานได้ตามปกติ แค่ไม่บังคับ 1 บัญชี/1 เครื่อง
+      try{
+        const { data: token, error: sessErr } = await supabaseClient.rpc('start_session', {
+          p_username: user.username, p_password: pw, p_device_label: user.deviceLabel
+        });
+        if(!sessErr && token) user.sessionToken = token;
+      }catch(e){ console.error('start_session ไม่สำเร็จ (อาจยังไม่ได้ตั้งค่าฐานข้อมูล)', e); }
+
       msg.textContent = '';
       enterAppUI(user);
       showLoginSuccessOverlay(user);
@@ -3191,7 +3300,10 @@
     document.getElementById('loginPassword').focus();
   }
 
-  function doLogout(dueToTimeout){
+  function doLogout(dueToTimeout, customMsg){
+    const userToEnd = currentUser;
+    unsubscribeSessionRealtime();
+    stopSessionCheckPolling();
     currentUser = null;
     clearSession();
     stopPresence();
@@ -3199,9 +3311,18 @@
     document.getElementById('loginUsername').value = '';
     document.getElementById('loginPassword').value = '';
     const msg = document.getElementById('loginMsg');
-    msg.textContent = dueToTimeout === true ? '⏰ ออกจากระบบอัตโนมัติเนื่องจากไม่มีการใช้งานเกิน 30 นาที กรุณาเข้าสู่ระบบใหม่' : '';
-    msg.style.color = dueToTimeout === true ? '#c0392b' : '#888';
+    if(customMsg){
+      msg.textContent = customMsg;
+      msg.style.color = '#c0392b';
+    } else {
+      msg.textContent = dueToTimeout === true ? '⏰ ออกจากระบบอัตโนมัติเนื่องจากไม่มีการใช้งานเกิน 30 นาที กรุณาเข้าสู่ระบบใหม่' : '';
+      msg.style.color = dueToTimeout === true ? '#c0392b' : '#888';
+    }
     document.getElementById('loginOverlay').classList.add('show');
+    // แจ้งฐานข้อมูลว่า session นี้จบแล้ว (WHERE เช็ค token คู่กันด้วย ดังนั้นถ้าเราเพิ่งถูกเครื่องอื่นตัดออกไปแล้ว คำสั่งนี้จะไม่ไปลบ session ของเครื่องใหม่โดยไม่ตั้งใจ)
+    if(userToEnd && userToEnd.sessionToken && supabaseClient){
+      supabaseClient.rpc('end_session', { p_username: userToEnd.username, p_session_token: userToEnd.sessionToken }).catch(()=>{});
+    }
   }
 
   // ===== Cache สำหรับ query ที่ดึงจาก activity_log (รายงาน/กราฟ/อะไหล่หมดสต็อก) =====
