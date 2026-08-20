@@ -348,6 +348,8 @@
     border-bottom:1px solid var(--line-soft);
   }
   .topbar.scrolled{ box-shadow:0 8px 20px rgba(0,0,0,.35); }
+  /* บนเดสก์ท็อป div ครอบทั้งสองกลุ่มนี้ "โปร่งใส" ทางเลย์เอาต์ ทำให้ปุ่ม/ช่องค้นหาข้างในยังเป็น flex item ของ .topbar โดยตรงเหมือนเดิมทุกอย่าง */
+  .topbar-row1, .topbar-actions{ display:contents; }
   .search-wrap{ position:relative; flex:1; min-width:200px; }
   .search-wrap #searchBox{ width:100%; padding-right:64px; }
   #searchBox{
@@ -414,6 +416,45 @@
   .avatar .online-dot{
     position:absolute; right:-1px; bottom:-1px; width:10px; height:10px; border-radius:50%;
     background:var(--green); border:2px solid #0b1017;
+  }
+
+  /* ===== มือถือ (โหมดลิ้นชักจริง เท่านั้น ไม่ใช่ตอนสลับไปโหมดเดสก์ท็อปย่อบนมือถือ): จัดแถบเครื่องมือใหม่เป็น 2 แถว — แถวแรกเมนู/ค้นหา/ไอคอนกลม, แถวล่างปุ่มคำสั่งเรียงเป็นตาราง ===== */
+  @media (max-width:760px){
+    body:not(.desktop-scale-mode) .topbar{
+      flex-direction:column;
+      align-items:stretch;
+      gap:10px;
+      padding:12px 14px 14px;
+    }
+    body:not(.desktop-scale-mode) .topbar-row1{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      width:100%;
+    }
+    body:not(.desktop-scale-mode) .topbar-row1 .mobile-menu-btn{ order:1; }
+    body:not(.desktop-scale-mode) .topbar-row1 .search-wrap{ order:2; flex:1 1 auto; min-width:0; }
+    body:not(.desktop-scale-mode) .topbar-row1 .display-mode-toggle-btn{ order:3; }
+    body:not(.desktop-scale-mode) .topbar-row1 .theme-toggle-btn{ order:4; }
+    body:not(.desktop-scale-mode) .topbar-row1 .user-chip{ order:5; margin-left:0; flex-shrink:0; }
+    body:not(.desktop-scale-mode) .topbar-row1 #userGreeting{ display:none; } /* บนมือถือโชว์แค่ไอคอนอวาตาร์ ไม่โชว์ชื่อ ประหยัดพื้นที่ */
+
+    body:not(.desktop-scale-mode) .topbar-actions{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:8px;
+      width:100%;
+    }
+    body:not(.desktop-scale-mode) .topbar-actions .tb-btn{
+      justify-content:center;
+      width:100%;
+      padding:12px 8px;
+      font-size:12px;
+      border-radius:12px;
+    }
+  }
+  @media (max-width:420px){
+    body:not(.desktop-scale-mode) .topbar-actions .tb-btn{ font-size:11px; padding:11px 6px; gap:5px; }
   }
 
   #backToTopBtn{
@@ -622,6 +663,29 @@
     gap:16px;
     transition:max-width .18s ease;
   }
+  /* ===== มือถือ (โหมดลิ้นชักจริง เท่านั้น): แสดงการ์ดอะไหล่เป็น 2 คอลัมน์แทนที่จะเรียงแถวละ 1 ใบ — ถ้าอยู่โหมดย่อจอเดสก์ท็อป (desktop-scale-mode) ให้คงเลย์เอาต์เดสก์ท็อปเดิมไว้ ===== */
+  @media (max-width:760px){
+    body:not(.desktop-scale-mode) .grid{
+      grid-template-columns:repeat(2, 1fr);
+      gap:10px;
+      padding:0 12px;
+    }
+    body:not(.desktop-scale-mode) .thumb{ height:108px; }
+    body:not(.desktop-scale-mode) .thumb::before{ font-size:9px; padding:3px 7px; top:6px; left:6px; }
+    body:not(.desktop-scale-mode) .thumb-code-chip{ font-size:12.5px; padding:5px 9px; bottom:6px; left:6px; }
+    body:not(.desktop-scale-mode) .body{ padding:10px 10px 11px; }
+    body:not(.desktop-scale-mode) .p-name{ font-size:12.5px; }
+    body:not(.desktop-scale-mode) .pin-btn{ font-size:15px; }
+    body:not(.desktop-scale-mode) .info-rows{ gap:4px; margin:7px 0 8px; }
+    body:not(.desktop-scale-mode) .info-row{ font-size:10px; padding:4px 6px; gap:4px; }
+    body:not(.desktop-scale-mode) .info-row .info-tag{ font-size:8.5px; padding:2px 5px; }
+    body:not(.desktop-scale-mode) .stat-line{ font-size:10.5px; margin-top:4px; }
+    body:not(.desktop-scale-mode) .badge{ font-size:9.5px; padding:3px 8px; margin-top:8px; }
+    body:not(.desktop-scale-mode) .upd{ font-size:9px; margin-top:7px; }
+    body:not(.desktop-scale-mode) .qw-wrap{ top:6px; right:6px; }
+    body:not(.desktop-scale-mode) .qw-btn{ width:30px; height:30px; font-size:14px; }
+    body:not(.desktop-scale-mode) .card.low .body::before{ font-size:9.5px; padding:3px 6px; margin-bottom:6px; }
+  }
   /* ===== ปุ่ม "แสดงเพิ่มเติม" สไตล์ไฮเทค ===== */
   .vs-loadmore-wrap{
     max-width:var(--content-max-w);
@@ -801,6 +865,37 @@
   }
   .stock-table .st-meta{ color:var(--sub); font-size:11.5px; line-height:1.4; white-space:nowrap; }
   .stock-table .st-saving{ color:var(--amber); font-size:11px; margin-left:6px; }
+
+  /* ===== มือถือ (โหมดลิ้นชักจริง เท่านั้น): เปลี่ยนตารางแนวนอนที่ต้องเลื่อนซ้าย-ขวา ให้เป็นการ์ดเรียงตามแนวตั้งแทน เห็นข้อมูลครบไม่ต้องเลื่อนจอ ===== */
+  @media (max-width:760px){
+    body:not(.desktop-scale-mode) #tableViewWrap{ padding:0 12px !important; }
+    body:not(.desktop-scale-mode) .stock-table{ min-width:0; width:100%; font-size:13px; }
+    body:not(.desktop-scale-mode) .stock-table thead{ display:none; }
+    body:not(.desktop-scale-mode) .stock-table,
+    body:not(.desktop-scale-mode) .stock-table tbody,
+    body:not(.desktop-scale-mode) .stock-table tr,
+    body:not(.desktop-scale-mode) .stock-table td{ display:block; width:100%; }
+    body:not(.desktop-scale-mode) .stock-table tr{
+      border:1px solid var(--line); border-radius:12px;
+      margin:10px; padding:4px 10px; background:var(--panel);
+    }
+    body:not(.desktop-scale-mode) .stock-table tbody tr:hover{ background:var(--panel); }
+    body:not(.desktop-scale-mode) .stock-table td{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:14px;
+      padding:9px 0; border-bottom:1px dashed var(--line-soft); text-align:right;
+    }
+    body:not(.desktop-scale-mode) .stock-table tr td:last-child{ border-bottom:none; }
+    body:not(.desktop-scale-mode) .stock-table td::before{
+      content:attr(data-label); font-size:11px; font-weight:700; color:var(--sub);
+      text-align:left; flex-shrink:0; padding-top:2px; white-space:nowrap;
+    }
+    body:not(.desktop-scale-mode) .stock-table .st-name{ text-align:right; }
+    body:not(.desktop-scale-mode) .stock-table .st-sub{ text-align:right; }
+    body:not(.desktop-scale-mode) .stock-table .st-qty-input{ width:64px; }
+    body:not(.desktop-scale-mode) .stock-table .st-status-select{ min-width:0; width:140px; }
+    body:not(.desktop-scale-mode) .stock-table .st-po-input{ width:140px; margin-left:auto; }
+    body:not(.desktop-scale-mode) .stock-table td .td-value{ display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+  }
 
   /* ===== Qty edit confirm popover ===== */
   .qty-save-popover{
@@ -2267,21 +2362,25 @@
 
     <div class="main-wrap">
       <div class="topbar" id="stickyToolbarWrap">
-        <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileSidebar()" title="เปิดเมนู" aria-label="เปิดเมนู">☰</button>
-        <button type="button" class="display-mode-toggle-btn" id="displayModeToggleBtn" onclick="toggleDisplayMode()" title="สลับมุมมองมือถือ/เดสก์ท็อป" aria-label="สลับมุมมองมือถือ/เดสก์ท็อป">🖥️</button>
-        <div class="search-wrap">
-          <input id="searchBox" type="text" placeholder="ค้นหาอะไหล่ (ชื่อ, รุ่น, แบรนด์ หรือ รหัส)...">
-          <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearchBox()" title="ล้างคำค้นหา">✕</button>
-          <span class="search-kbd-hint" id="searchKbdHint">Ctrl K</span>
+        <div class="topbar-row1">
+          <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileSidebar()" title="เปิดเมนู" aria-label="เปิดเมนู">☰</button>
+          <div class="search-wrap">
+            <input id="searchBox" type="text" placeholder="ค้นหาอะไหล่ (ชื่อ, รุ่น, แบรนด์ หรือ รหัส)...">
+            <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearchBox()" title="ล้างคำค้นหา">✕</button>
+            <span class="search-kbd-hint" id="searchKbdHint">Ctrl K</span>
+          </div>
+          <button type="button" class="display-mode-toggle-btn" id="displayModeToggleBtn" onclick="toggleDisplayMode()" title="สลับมุมมองมือถือ/เดสก์ท็อป" aria-label="สลับมุมมองมือถือ/เดสก์ท็อป">🖥️</button>
+          <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()" title="สลับโหมดสว่าง/มืด">🌙</button>
+          <div class="user-chip">
+            <span id="userGreeting"></span>
+            <div class="avatar">👤<span class="online-dot"></span></div>
+          </div>
         </div>
-        <button id="scanBtn" class="tb-btn tb-amber" onclick="openBarcodeScanner()">📷 สแกนบาร์โค้ด</button>
-        <button id="refreshBtn" class="tb-btn tb-blue" onclick="reloadFromStorage()">🔄 รีเฟรชข้อมูล</button>
-        <button id="tableViewBtn" class="tb-btn tb-purple" onclick="showTableView()">📋 ดูตารางทั้งหมด</button>
-        <button id="labelPrintModeBtn" class="tb-btn tb-green" onclick="toggleLabelPrintMode()">🏷️ พิมพ์ป้ายหลายรายการ</button>
-        <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()" title="สลับโหมดสว่าง/มืด">🌙</button>
-        <div class="user-chip">
-          <span id="userGreeting"></span>
-          <div class="avatar">👤<span class="online-dot"></span></div>
+        <div class="topbar-actions">
+          <button id="scanBtn" class="tb-btn tb-amber" onclick="openBarcodeScanner()">📷 สแกนบาร์โค้ด</button>
+          <button id="refreshBtn" class="tb-btn tb-blue" onclick="reloadFromStorage()">🔄 รีเฟรชข้อมูล</button>
+          <button id="tableViewBtn" class="tb-btn tb-purple" onclick="showTableView()">📋 ดูตารางทั้งหมด</button>
+          <button id="labelPrintModeBtn" class="tb-btn tb-green" onclick="toggleLabelPrintMode()">🏷️ พิมพ์ป้ายหลายรายการ</button>
         </div>
       </div>
 
@@ -6119,29 +6218,35 @@
       const statusOptionsHtml = STATUS_OPTIONS.map(s=>`<option value="${s}" ${s===curStatus?'selected':''}>${s}</option>`).join('');
       return `
         <tr data-code="${p.code}">
-          <td class="st-code" style="cursor:pointer;color:var(--steel);" onclick="openModal('${p.code}')" title="คลิกเพื่อแก้ไขรายละเอียดทั้งหมด">${p.code}</td>
-          <td>
-            <div class="st-name">${p.name}</div>
-            <div class="st-sub">${p.category}</div>
+          <td class="st-code" data-label="รหัส" style="cursor:pointer;color:var(--steel);" onclick="openModal('${p.code}')" title="คลิกเพื่อแก้ไขรายละเอียดทั้งหมด">${p.code}</td>
+          <td data-label="ชื่ออะไหล่">
+            <div class="td-value" style="align-items:flex-end;">
+              <div class="st-name">${p.name}</div>
+              <div class="st-sub">${p.category}</div>
+            </div>
           </td>
-          <td class="st-sub">${modelBrand}</td>
-          <td class="st-num">${p.min} – ${(p.max===null||p.max===undefined) ? 'ไม่จำกัด' : p.max}</td>
-          <td class="st-num">
-            <input type="number" class="st-qty-input ${low?'low':''}" min="0" step="1"
-              value="${p.qty}"
-              onchange="handleQtyChange('${p.code}', this)"
-              onkeydown="if(event.key==='Escape'){ this.value=(parts.find(x=>x.code==='${p.code}')||{}).qty; cancelQtyPopover(); this.blur(); }">
-            <div class="st-sub" style="margin-top:2px;${low?'color:var(--red);':''}">ต้องมีอย่างน้อย ${p.min}</div>
-            <span class="st-saving" id="stSaving-${p.code}" style="display:none;">กำลังบันทึก...</span>
+          <td class="st-sub" data-label="รุ่น / แบรนด์">${modelBrand}</td>
+          <td class="st-num" data-label="Min – Max">${p.min} – ${(p.max===null||p.max===undefined) ? 'ไม่จำกัด' : p.max}</td>
+          <td class="st-num" data-label="คงเหลือ">
+            <div class="td-value">
+              <input type="number" class="st-qty-input ${low?'low':''}" min="0" step="1"
+                value="${p.qty}"
+                onchange="handleQtyChange('${p.code}', this)"
+                onkeydown="if(event.key==='Escape'){ this.value=(parts.find(x=>x.code==='${p.code}')||{}).qty; cancelQtyPopover(); this.blur(); }">
+              <div class="st-sub" style="margin-top:2px;${low?'color:var(--red);':''}">ต้องมีอย่างน้อย ${p.min}</div>
+              <span class="st-saving" id="stSaving-${p.code}" style="display:none;">กำลังบันทึก...</span>
+            </div>
           </td>
-          <td class="st-num" id="stStatus-${p.code}">
-            <select class="st-status-select" onchange="updateStatusFromTable('${p.code}', this)">${statusOptionsHtml}</select>
-            <input type="text" class="st-po-input" id="stPo-${p.code}" placeholder="เลขที่ PR/PO"
-              value="${p.poNumber||''}" style="display:${needsPo?'block':'none'};"
-              onchange="updatePoFromTable('${p.code}', this)">
-            <span class="st-saving" id="stStatusSaving-${p.code}" style="display:none;">กำลังบันทึก...</span>
+          <td class="st-num" id="stStatus-${p.code}" data-label="สถานะการขอซื้อ">
+            <div class="td-value">
+              <select class="st-status-select" onchange="updateStatusFromTable('${p.code}', this)">${statusOptionsHtml}</select>
+              <input type="text" class="st-po-input" id="stPo-${p.code}" placeholder="เลขที่ PR/PO"
+                value="${p.poNumber||''}" style="display:${needsPo?'block':'none'};"
+                onchange="updatePoFromTable('${p.code}', this)">
+              <span class="st-saving" id="stStatusSaving-${p.code}" style="display:none;">กำลังบันทึก...</span>
+            </div>
           </td>
-          <td class="st-meta" id="stMeta-${p.code}">${p.updatedAt || '—'}${p.updatedBy ? '<br>โดย ' + p.updatedBy : ''}</td>
+          <td class="st-meta" id="stMeta-${p.code}" data-label="แก้ไขล่าสุด"><div class="td-value" style="align-items:flex-end;">${p.updatedAt || '—'}${p.updatedBy ? '<br>โดย ' + p.updatedBy : ''}</div></td>
         </tr>`;
     }).join('');
 
