@@ -844,7 +844,16 @@
     padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:middle;
   }
   .stock-table tbody tr:hover{ background:var(--row-hover); }
-  .stock-table .st-code{ font-family:var(--mono); font-weight:700; white-space:nowrap; }
+  .stock-table .st-code{
+    display:inline-flex; align-items:center;
+    font-family:var(--mono); font-weight:800; font-size:13.5px; letter-spacing:.02em;
+    white-space:nowrap; color:var(--amber);
+    background:rgba(240,169,60,.13);
+    border:1px solid rgba(240,169,60,.45);
+    padding:5px 11px; border-radius:7px;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .stock-table .st-code:hover{ background:rgba(240,169,60,.22); border-color:rgba(240,169,60,.7); }
   .stock-table .st-name{ font-weight:600; }
   .stock-table .st-sub{ color:var(--sub); font-size:12px; }
   .stock-table .st-num{ text-align:center; font-family:var(--mono); }
@@ -6218,7 +6227,7 @@
       const statusOptionsHtml = STATUS_OPTIONS.map(s=>`<option value="${s}" ${s===curStatus?'selected':''}>${s}</option>`).join('');
       return `
         <tr data-code="${p.code}">
-          <td class="st-code" data-label="รหัส" style="cursor:pointer;color:var(--steel);" onclick="openModal('${p.code}')" title="คลิกเพื่อแก้ไขรายละเอียดทั้งหมด">${p.code}</td>
+          <td class="st-code" data-label="รหัส" style="cursor:pointer;" onclick="openModal('${p.code}')" title="คลิกเพื่อแก้ไขรายละเอียดทั้งหมด">${p.code}</td>
           <td data-label="ชื่ออะไหล่">
             <div class="td-value" style="align-items:flex-end;">
               <div class="st-name">${p.name}</div>
