@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>เช็คสตอคอะไหล่</title>
 <!-- ===== PWA: ทำให้ติดตั้งเป็นแอปได้ (Add to Home Screen) ===== -->
 <link rel="manifest" href="./manifest.json">
@@ -262,6 +262,10 @@
   @media (max-width: 900px){
     .sidebar{ display:none; }
     .main-wrap{ padding-left:0; }
+    /* body.sidebar-collapsed .main-wrap (2 คลาส) มี specificity สูงกว่ากฎด้านบนนี้ (1 คลาส)
+       เลยชนะและยังดันเนื้อหาไปทางขวาทิ้งช่องว่างไว้ทั้งที่ sidebar ถูกซ่อนไปแล้วบนมือถือ
+       ต้อง override ซ้ำในนี้ให้ specificity เท่ากัน แล้วอาศัยลำดับประกาศทีหลังชนะแทน */
+    body.sidebar-collapsed .main-wrap{ padding-left:0; }
   }
 
   /* ===== Topbar ===== */
@@ -325,6 +329,8 @@
   .tb-btn.tb-green{ border-color:rgba(63,191,114,.5); color:#7fe0a3; background:rgba(63,191,114,.08); }
   .tb-btn.tb-green:hover{ background:rgba(63,191,114,.16); }
   .tb-btn.tb-green.active{ background:var(--green); color:#08210f; border-color:var(--green); }
+  .tb-btn.tb-cyan{ border-color:rgba(56,189,208,.5); color:#5fd6e8; background:rgba(56,189,208,.08); }
+  .tb-btn.tb-cyan:hover{ background:rgba(56,189,208,.16); }
 
   .user-chip{ display:flex; align-items:center; gap:10px; margin-left:2px; }
   #userGreeting{ font-size:12px; color:var(--sub); white-space:nowrap; }
@@ -960,7 +966,30 @@
   .lpb-btn:hover{ filter:brightness(1.2); }
   .lpb-btn.lpb-print{ background:var(--green); border-color:var(--green); color:#08210f; }
   .lpb-btn.lpb-print:disabled{ opacity:.45; cursor:not-allowed; filter:none; }
+  .lpb-btn.lpb-qr{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .lpb-btn.lpb-qr:disabled{ opacity:.45; cursor:not-allowed; filter:none; }
   .lpb-btn.lpb-cancel{ background:transparent; color:var(--sub); }
+  /* ===== ตะกร้าสแกนเบิก QR ===== */
+  .qr-basket-list{ display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; margin-top:10px; }
+  .qr-basket-row{
+    display:flex; flex-direction:column; gap:6px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:9px; padding:9px 11px;
+  }
+  .qr-basket-row.warn{ border-color:rgba(224,87,79,.6); background:rgba(224,87,79,.08); }
+  .qr-basket-row-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .qr-basket-name{ font-size:13px; font-weight:700; color:var(--ink); line-height:1.3; }
+  .qr-basket-code{ display:block; font-family:var(--mono); font-size:10.5px; color:var(--sub); font-weight:400; margin-top:1px; }
+  .qr-basket-ctrls{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .qr-basket-ctrls button{
+    width:26px; height:26px; border-radius:7px; border:1px solid var(--line);
+    background:var(--input-bg2); color:var(--ink); cursor:pointer; font-size:15px; line-height:1;
+  }
+  .qr-basket-ctrls button:hover{ border-color:var(--amber); color:var(--amber); }
+  .qr-basket-qty{ min-width:22px; text-align:center; font-weight:700; font-size:13.5px; }
+  .qr-basket-remove{ color:var(--red) !important; }
+  .qr-basket-remove:hover{ border-color:var(--red) !important; color:var(--red) !important; }
+  .qr-basket-warn{ font-size:11.5px; color:var(--red); }
+  .qr-basket-empty{ font-size:12.5px; color:var(--sub); text-align:center; padding:14px 0; }
 
 
   /* modal */
@@ -2077,6 +2106,29 @@
     </div>
   </div>
 
+  <!-- ===== สแกนเบิก QR แบบตะกร้า (คล้ายแคชเชียร์ในห้าง): สแกนสะสมได้หลายชิ้น แล้วยืนยันเบิกทีเดียว ===== -->
+  <div class="overlay" id="qrWithdrawOverlay">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-close"><span onclick="closeQrWithdrawScanner()" title="ปิด">✕</span></div>
+      <h2>สแกนเบิก QR</h2>
+      <div class="msub">เล็งกล้องไปที่ QR เบิกของแต่ละชิ้น — สแกนได้ต่อเนื่องหลายชิ้น</div>
+      <div id="qrWithdrawReader" style="width:100%;margin-top:10px;border-radius:10px;overflow:hidden;"></div>
+      <div id="qrWithdrawMsg" style="font-size:13px;margin-top:10px;min-height:18px;"></div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">
+        <span style="font-size:12.5px;font-weight:700;color:var(--sub);">🧺 ตะกร้า (<span id="qrBasketCount">0</span> รายการ)</span>
+        <button type="button" onclick="clearQrBasket()" style="background:none;border:none;color:var(--sub);font-size:11.5px;cursor:pointer;text-decoration:underline;">ล้างตะกร้า</button>
+      </div>
+      <div id="qrBasketEmpty" class="qr-basket-empty">ยังไม่มีรายการในตะกร้า — เริ่มสแกนได้เลย</div>
+      <div id="qrBasketList" class="qr-basket-list"></div>
+
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeQrWithdrawScanner()">ปิดกล้อง</button>
+        <button id="qrBasketConfirmBtn" onclick="confirmQrBasketWithdraw()" disabled style="background:var(--green);color:#08210f;">✓ ยืนยันเบิกทั้งหมด</button>
+      </div>
+    </div>
+  </div>
+
   <div style="display:none;">
     <span><b>บันทึกจริง</b> — ข้อมูลถูกเก็บไว้บน Supabase ทุกเครื่องที่เปิดไฟล์นี้เห็นข้อมูลชุดเดียวกัน</span>
   </div>
@@ -2096,6 +2148,7 @@
       <nav class="sidebar-nav">
         <a class="nav-item active" href="#topPage" title="หน้าหลัก"><span class="nav-ic">🏠</span><span>หน้าหลัก</span></a>
         <a class="nav-item" href="#grid" title="รายการอะไหล่"><span class="nav-ic">📦</span><span>รายการอะไหล่</span></a>
+        <a class="nav-item" onclick="openQrWithdrawScanner()" title="สแกนเบิก QR"><span class="nav-ic">🔳</span><span>สแกนเบิก QR</span></a>
         <a class="nav-item" onclick="openChartsModal()" title="กราฟ / สถิติ"><span class="nav-ic">📈</span><span>กราฟ / สถิติ</span></a>
         <a class="nav-item" onclick="openPurchaseListModal()" title="ขอซื้อ / เครื่องมือ"><span class="nav-ic">🛒</span><span>ขอซื้อ / เครื่องมือ</span></a>
         <a class="nav-item" onclick="openReportModal()" title="รายงานการแก้ไข"><span class="nav-ic">📊</span><span>รายงานการแก้ไข</span></a>
@@ -2207,6 +2260,7 @@
           <button type="button" class="lpb-btn" onclick="labelSelectAllVisible()">เลือกทั้งหมดที่แสดง</button>
           <button type="button" class="lpb-btn" onclick="labelClearSelection()">ล้างที่เลือก</button>
           <button type="button" class="lpb-btn lpb-print" id="labelPrintGoBtn" onclick="printSelectedLabels()" disabled>🖨️ พิมพ์ป้าย (<span id="labelPrintCountNum">0</span>)</button>
+          <button type="button" class="lpb-btn lpb-qr" id="labelPrintQrGoBtn" onclick="printSelectedQrLabels()" disabled>🔳 พิมพ์ QR เบิก (<span id="labelPrintQrCountNum">0</span>)</button>
           <button type="button" class="lpb-btn lpb-cancel" onclick="toggleLabelPrintMode()">✕ ออกจากโหมดเลือก</button>
         </div>
       </div>
@@ -2450,6 +2504,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
@@ -2753,7 +2808,7 @@
 
   // ประทับวันที่-เวลาที่ไฟล์นี้ถูกบันทึก/แก้ไขล่าสุดโดยอัตโนมัติ ไม่ต้องแก้เลขเวอร์ชั่นเอง
   // (ทุกครั้งที่ไฟล์นี้ถูก generate ใหม่ ค่านี้จะถูกแทนที่ด้วยวันเวลาปัจจุบัน ณ ตอนบันทึก)
-  const APP_VERSION = 'อัปเดตล่าสุด: 2026-08-19 07:25';
+  const APP_VERSION = 'อัปเดตล่าสุด: 2026-08-20 12:00';
   let currentUser = null; // {username, displayName, role, password}
   let appEnterTime = 0;
 
@@ -4633,6 +4688,238 @@
     openModal(match.code);
   }
 
+  // ===== สแกนเบิก QR แบบตะกร้า (คล้ายแคชเชียร์ในห้าง): สแกนสะสมได้หลายชิ้น แล้วยืนยันเบิกทีเดียว =====
+  // QR เข้ารหัสด้วยรูปแบบ "SCWD1:<รหัสสินค้า>" โดยเจตนา — แยกจากบาร์โค้ด CODE128 เดิม (ที่เข้ารหัสรหัสสินค้าเปล่าๆ)
+  // เพื่อกันสแกนชนกับ QR อื่นที่ไม่เกี่ยวข้องกับระบบ (เช่น QR บนกล่องซัพพลายเออร์ที่บังเอิญมีข้อความตรงกับรหัสสินค้า)
+  // ผลคือต้องพิมพ์ QR ใหม่ (ปุ่ม "พิมพ์ QR เบิก") ไปแปะเพิ่ม — สติกเกอร์บาร์โค้ด CODE128 เดิมจะไม่ถูกจับคู่ในหน้าจอนี้อีกต่อไป
+  const QR_WITHDRAW_PREFIX = 'SCWD1:';
+  let qrWithdrawScanner = null;
+  let qrBasket = []; // [{code, name, unit, qty, avail}]
+  let qrScanCooldown = {}; // code -> เวลาที่สแกนติดล่าสุด กันสแกนรัวซ้ำโค้ดเดิมจากเฟรมกล้องที่ติดกัน
+
+  function openQrWithdrawScanner(){
+    document.getElementById('qrWithdrawMsg').textContent = '';
+    document.getElementById('qrWithdrawOverlay').classList.add('show');
+    renderQrBasket();
+
+    if(isInAppBrowser()){
+      showQrOpenInBrowserPrompt();
+      return;
+    }
+
+    qrWithdrawScanner = null;
+    const readerEl = document.getElementById('qrWithdrawReader');
+    if(readerEl) readerEl.innerHTML = '';
+    try{
+      qrWithdrawScanner = new Html5Qrcode('qrWithdrawReader');
+      const config = { fps: 10, qrbox: { width: 240, height: 240 } };
+      qrWithdrawScanner.start(
+        { facingMode: 'environment' },
+        config,
+        onQrWithdrawScanSuccess,
+        () => {} // ไม่สนใจเฟรมที่สแกนไม่ติด
+      ).catch(err => {
+        console.error('เปิดกล้องไม่สำเร็จ', err);
+        const m = document.getElementById('qrWithdrawMsg');
+        m.textContent = '⚠ เปิดกล้องไม่สำเร็จ ตรวจสอบสิทธิ์การเข้าถึงกล้องของเบราว์เซอร์';
+        m.style.color = '#c0392b';
+      });
+    }catch(err){
+      console.error('เปิดกล้องไม่สำเร็จ', err);
+      const m = document.getElementById('qrWithdrawMsg');
+      m.textContent = '⚠ เปิดกล้องไม่สำเร็จ ตรวจสอบสิทธิ์การเข้าถึงกล้องของเบราว์เซอร์';
+      m.style.color = '#c0392b';
+    }
+  }
+
+  // เหมือน showOpenInBrowserPrompt() ของสแกนบาร์โค้ดเดิม แต่ผูกกับ element id ของตัวเอง กันชนไอดีกันตอนเปิดสลับสองตัวสแกน
+  function showQrOpenInBrowserPrompt(){
+    const readerEl = document.getElementById('qrWithdrawReader');
+    const msgEl = document.getElementById('qrWithdrawMsg');
+    if(readerEl) readerEl.innerHTML = '';
+    if(msgEl){
+      msgEl.style.color = '#c0392b';
+      msgEl.innerHTML = '⚠ กล้องใช้งานไม่ได้ในเบราว์เซอร์ของแอปแช็ต (เช่น LINE) กรุณากดปุ่มด้านล่างเพื่อเปิดหน้านี้ด้วยเบราว์เซอร์จริงก่อน';
+    }
+    let btn = document.getElementById('qrOpenExternalBrowserBtn');
+    if(!btn){
+      btn = document.createElement('button');
+      btn.id = 'qrOpenExternalBrowserBtn';
+      btn.textContent = '🌐 เปิดในเบราว์เซอร์';
+      btn.style.cssText = 'margin-top:10px;width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--green);background:rgba(63,191,114,.14);color:var(--green);cursor:pointer;font-size:13px;font-weight:600;';
+      btn.onclick = openInExternalBrowser;
+      msgEl.insertAdjacentElement('afterend', btn);
+    }
+  }
+
+  function closeQrWithdrawScanner(){
+    // ปิดกล้องเสมอ — แต่ตะกร้าที่สแกนสะสมไว้ยังคงอยู่ต่อ (เผื่อปิดพักแล้วกลับมาสแกนต่อ) จนกว่าจะกดยืนยันเบิกหรือล้างตะกร้าเอง
+    document.getElementById('qrWithdrawOverlay').classList.remove('show');
+    const extBtn = document.getElementById('qrOpenExternalBrowserBtn');
+    if(extBtn) extBtn.remove();
+    if(qrWithdrawScanner){
+      try{
+        qrWithdrawScanner.stop()
+          .then(()=>{ try{ qrWithdrawScanner.clear(); }catch(e){} qrWithdrawScanner = null; })
+          .catch(()=>{ qrWithdrawScanner = null; });
+      }catch(e){
+        qrWithdrawScanner = null;
+      }
+    }
+  }
+
+  function onQrWithdrawScanSuccess(decodedText){
+    const raw = (decodedText || '').trim();
+    const msgEl = document.getElementById('qrWithdrawMsg');
+    if(!raw) return;
+
+    const now = Date.now();
+    if(qrScanCooldown[raw] && (now - qrScanCooldown[raw]) < 1500) return; // กันสแกนรัวซ้ำโค้ดเดิมในเฟรมติดกัน
+    qrScanCooldown[raw] = now;
+
+    // ต้องขึ้นต้นด้วย "SCWD1:" เท่านั้น — ของอื่นที่สแกนติด (เช่น QR บนกล่องซัพพลายเออร์ หรือบาร์โค้ด CODE128 เดิม) จะไม่ถูกนำมาค้นหาเป็นรหัสสินค้า
+    if(!raw.startsWith(QR_WITHDRAW_PREFIX)){
+      msgEl.style.color = '#c0392b';
+      msgEl.textContent = `⚠ นี่ไม่ใช่ QR เบิกของของระบบนี้ — กรุณาสแกน QR ที่พิมพ์จากปุ่ม "พิมพ์ QR เบิก"`;
+      return;
+    }
+    const code = raw.slice(QR_WITHDRAW_PREFIX.length).trim();
+    if(!code) return;
+
+    const part = parts.find(p => p.code.toLowerCase() === code.toLowerCase());
+    if(!part){
+      msgEl.style.color = '#c0392b';
+      msgEl.textContent = `ไม่พบอะไหล่รหัส "${code}" ในระบบ`;
+      return;
+    }
+
+    addToQrBasket(part);
+    msgEl.style.color = 'var(--green)';
+    msgEl.textContent = `✓ เพิ่ม "${part.name}" แล้ว — สแกนชิ้นถัดไปได้เลย`;
+    if(navigator.vibrate) navigator.vibrate(60);
+  }
+
+  function addToQrBasket(part){
+    const existing = qrBasket.find(x=>x.code===part.code);
+    if(existing){
+      existing.qty += 1;
+      existing.avail = part.qty; // รีเฟรชยอดคงเหลือล่าสุดที่รู้ ณ ตอนสแกน
+    } else {
+      qrBasket.push({ code: part.code, name: part.name, unit: part.unit, qty: 1, avail: part.qty });
+    }
+    renderQrBasket();
+  }
+
+  function changeQrBasketQty(code, delta){
+    const item = qrBasket.find(x=>x.code===code);
+    if(!item) return;
+    item.qty += delta;
+    if(item.qty <= 0){
+      qrBasket = qrBasket.filter(x=>x.code!==code);
+    }
+    renderQrBasket();
+  }
+
+  function removeFromQrBasket(code){
+    qrBasket = qrBasket.filter(x=>x.code!==code);
+    renderQrBasket();
+  }
+
+  function clearQrBasket(){
+    if(qrBasket.length && !confirm('ล้างรายการทั้งหมดในตะกร้า?')) return;
+    qrBasket = [];
+    renderQrBasket();
+  }
+
+  function renderQrBasket(){
+    const wrap = document.getElementById('qrBasketList');
+    const emptyEl = document.getElementById('qrBasketEmpty');
+    const confirmBtn = document.getElementById('qrBasketConfirmBtn');
+    const countEl = document.getElementById('qrBasketCount');
+    if(!wrap) return;
+    if(countEl) countEl.textContent = String(qrBasket.length);
+    if(!qrBasket.length){
+      wrap.innerHTML = '';
+      if(emptyEl) emptyEl.style.display = 'block';
+      if(confirmBtn) confirmBtn.disabled = true;
+      return;
+    }
+    if(emptyEl) emptyEl.style.display = 'none';
+    if(confirmBtn) confirmBtn.disabled = false;
+    wrap.innerHTML = qrBasket.map(item=>{
+      const over = item.qty > item.avail;
+      return `
+        <div class="qr-basket-row${over ? ' warn' : ''}">
+          <div class="qr-basket-row-top">
+            <div class="qr-basket-name">${escapeHtml(item.name)}<span class="qr-basket-code">${escapeHtml(item.code)}</span></div>
+            <div class="qr-basket-ctrls">
+              <button type="button" onclick="changeQrBasketQty('${item.code}',-1)" title="ลดจำนวน">−</button>
+              <span class="qr-basket-qty">${item.qty}</span>
+              <button type="button" onclick="changeQrBasketQty('${item.code}',1)" title="เพิ่มจำนวน">+</button>
+              <button type="button" class="qr-basket-remove" onclick="removeFromQrBasket('${item.code}')" title="ลบออกจากตะกร้า">✕</button>
+            </div>
+          </div>
+          ${over ? `<div class="qr-basket-warn">⚠ มีของแค่ ${item.avail} ${item.unit} เท่านั้น</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // ยืนยันเบิกทุกชิ้นในตะกร้าทีเดียว — ทำทีละชิ้นแบบ atomic เหมือนปุ่มเบิกด่วน (adjustPartQty ปรับที่ DB โดยตรง)
+  // กันชนกับคนอื่นที่แก้ยอดพร้อมกัน ถ้าชิ้นไหนพลาด (เช่นของไม่พอแล้วเพราะมีคนเบิกตัดหน้า) จะข้ามชิ้นนั้นไป
+  // ส่วนชิ้นที่สำเร็จแล้วจะไม่ถูกเบิกซ้ำหรือย้อนคืน — เหลือค้างเฉพาะชิ้นที่พลาดไว้ในตะกร้าให้ลองใหม่/แก้ไขได้
+  async function confirmQrBasketWithdraw(){
+    if(!qrBasket.length || !currentUser) return;
+    const confirmBtn = document.getElementById('qrBasketConfirmBtn');
+    const msgEl = document.getElementById('qrWithdrawMsg');
+    if(confirmBtn){ confirmBtn.disabled = true; confirmBtn.textContent = 'กำลังบันทึก…'; }
+
+    const updatedBy = currentUser.displayName;
+    const succeeded = [];
+    const failed = []; // [{code, name, reason}]
+
+    for(const item of qrBasket){
+      const p = parts.find(x=>x.code===item.code);
+      if(!p){ failed.push({ code:item.code, name:item.name, reason:'ไม่พบในระบบแล้ว' }); continue; }
+      const now = new Date();
+      const nowStr = now.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+      const prevQty = p.qty;
+      try{
+        const updatedRow = await adjustPartQty(p.code, -item.qty, nowStr, updatedBy);
+        p.qty = updatedRow.qty;
+        p.updatedAt = updatedRow.updatedAt;
+        p.updatedBy = updatedRow.updatedBy;
+        qwRecentSelfUpdate.set(p.code, updatedRow.updatedAt);
+        setTimeout(()=>{ if(qwRecentSelfUpdate.get(p.code) === updatedRow.updatedAt) qwRecentSelfUpdate.delete(p.code); }, 8000);
+        logActivity('เบิกอะไหล่', p, `เบิก ${item.qty} ${p.unit} (จาก ${prevQty} เหลือ ${p.qty}) ผ่านสแกน QR แบบตะกร้า`, item.qty);
+        patchCardAfterQuickWithdraw(p);
+        succeeded.push(item.name);
+      }catch(e){
+        console.error('เบิกไม่สำเร็จ (สแกน QR):', item.code, e);
+        const errMsg = (e && e.message) ? e.message : 'ไม่ทราบสาเหตุ';
+        failed.push({ code:item.code, name:item.name, reason:errMsg });
+      }
+    }
+
+    updateRoomTabMeta();
+    if(document.getElementById('tableViewWrap').style.display !== 'none') renderStockTable();
+
+    if(failed.length === 0){
+      msgEl.style.color = 'var(--green)';
+      msgEl.textContent = `✓ เบิกสำเร็จทั้งหมด ${succeeded.length} รายการ`;
+      qrBasket = [];
+    } else {
+      msgEl.style.color = '#c0392b';
+      const failNames = failed.map(f=>`${f.name} (${f.reason})`).join(', ');
+      msgEl.textContent = `เบิกสำเร็จ ${succeeded.length} รายการ — ไม่สำเร็จ ${failed.length} รายการ: ${failNames}`;
+      // เก็บเฉพาะรายการที่ไม่สำเร็จไว้ในตะกร้า ให้แก้ไข/ลองใหม่ได้ ไม่ต้องสแกนรายการที่เบิกไปแล้วซ้ำ
+      const failedCodes = new Set(failed.map(f=>f.code));
+      qrBasket = qrBasket.filter(item => failedCodes.has(item.code));
+    }
+    renderQrBasket();
+
+    if(confirmBtn){ confirmBtn.disabled = (qrBasket.length === 0); confirmBtn.textContent = '✓ ยืนยันเบิกทั้งหมด'; }
+  }
+
   function toDbRow(p){
     return {
       code: (p.code || '').trim(), category: p.category, name: p.name, model: p.model, brand: p.brand, unit: p.unit,
@@ -5792,6 +6079,10 @@
     if(numEl) numEl.textContent = n;
     const printBtn = document.getElementById('labelPrintGoBtn');
     if(printBtn) printBtn.disabled = (n === 0);
+    const qrNumEl = document.getElementById('labelPrintQrCountNum');
+    if(qrNumEl) qrNumEl.textContent = n;
+    const qrPrintBtn = document.getElementById('labelPrintQrGoBtn');
+    if(qrPrintBtn) qrPrintBtn.disabled = (n === 0);
   }
 
   function escapeHtml(str){
@@ -5851,6 +6142,81 @@
           max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
         }
         .label-item svg{ max-width:100%; height:auto; }
+      </style></head>
+      <body>
+        <div class="label-grid">${labelBlocks.join('')}</div>
+        <script>
+          window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; };
+        <\/script>
+      </body></html>
+    `);
+    printWin.document.close();
+  }
+
+  // สร้างชีท QR สำหรับพิมพ์ติดชั้นวางของ — ใช้ label mode/รายการเลือกเดียวกับพิมพ์ป้ายบาร์โค้ด
+  // เนื้อหาใน QR เข้ารหัสด้วยรูปแบบ "SCWD1:<รหัสสินค้า>" โดยเจตนา แยกจากบาร์โค้ด CODE128 เดิม (รหัสสินค้าเปล่าๆ)
+  // กันสแกนหน้าจอ "สแกนเบิก QR" ชนกับ QR อื่นที่ไม่เกี่ยวข้อง (เช่น QR บนกล่องซัพพลายเออร์)
+  function printSelectedQrLabels(){
+    if(labelSelectedCodes.size === 0) return;
+    if(typeof QRCode === 'undefined'){ alert('โหลดไลบรารี QR ไม่สำเร็จ กรุณาลองใหม่'); return; }
+
+    const selectedParts = parts.filter(p => labelSelectedCodes.has(p.code));
+    selectedParts.sort((a,b) => a.code.localeCompare(b.code, 'th', {numeric:true}));
+
+    // สร้าง QR ของแต่ละรายการในกล่องที่ซ่อนอยู่ในหน้าปัจจุบันก่อน (qrcodejs วาดลง canvas) แล้วแปลงเป็นรูปภาพย้ายไปแปะในหน้าต่างพิมพ์
+    const tempWrap = document.createElement('div');
+    tempWrap.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+    document.body.appendChild(tempWrap);
+
+    const labelBlocks = [];
+    selectedParts.forEach((p, i)=>{
+      const qrHost = document.createElement('div');
+      qrHost.id = 'qrLbl' + i;
+      tempWrap.appendChild(qrHost);
+      let dataUrl = '';
+      try{
+        new QRCode(qrHost, {
+          text: QR_WITHDRAW_PREFIX + p.code,
+          width: 132, height: 132,
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        const canvasEl = qrHost.querySelector('canvas');
+        dataUrl = canvasEl ? canvasEl.toDataURL('image/png') : '';
+      }catch(e){
+        return; // สร้าง QR ไม่สำเร็จ ข้ามรายการนี้
+      }
+      if(!dataUrl) return;
+      labelBlocks.push(`
+        <div class="label-item">
+          <div class="label-name">${escapeHtml(p.name)}</div>
+          <img src="${dataUrl}" alt="QR" width="110" height="110">
+          <div class="label-code">${escapeHtml(p.code)}</div>
+        </div>`);
+    });
+
+    document.body.removeChild(tempWrap);
+
+    if(labelBlocks.length === 0){ alert('ไม่มีรายการที่สร้าง QR ได้'); return; }
+
+    const printWin = window.open('', '_blank', 'width=900,height=700');
+    if(!printWin){ alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาต Pop-up แล้วลองใหม่'); return; }
+    printWin.document.write(`
+      <!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>พิมพ์ QR เบิกของ (${labelBlocks.length} รายการ)</title>
+      <style>
+        @page{ margin:10mm; }
+        body{ font-family:'Segoe UI',sans-serif; margin:0; padding:12px; }
+        .label-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+        .label-item{
+          border:1px dashed #999; border-radius:6px; padding:8px 6px;
+          text-align:center; break-inside:avoid; page-break-inside:avoid;
+          display:flex; flex-direction:column; align-items:center; justify-content:center;
+        }
+        .label-name{
+          font-size:11px; font-weight:700; margin-bottom:4px; line-height:1.25;
+          max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        }
+        .label-code{ font-size:10px; color:#555; margin-top:4px; font-family:monospace; }
+        .label-item img{ display:block; }
       </style></head>
       <body>
         <div class="label-grid">${labelBlocks.join('')}</div>
