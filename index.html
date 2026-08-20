@@ -261,6 +261,7 @@
 
   /* ===== Mobile: sidebar กลายเป็นเมนูลิ้นชัก (drawer) แทนการซ่อนหายไปเฉยๆ ===== */
   .mobile-menu-btn{ display:none; }
+  .display-mode-toggle-btn{ display:none; }
   .sidebar-backdrop{ display:none; }
   .sidebar-close-btn{ display:none; }
   @media (max-width: 900px){
@@ -300,13 +301,35 @@
     }
     .sidebar-close-btn:hover{ color:var(--ink); }
 
-    .mobile-menu-btn{
+    .mobile-menu-btn, .display-mode-toggle-btn{
       display:flex; align-items:center; justify-content:center;
       width:40px; height:40px; border-radius:10px; flex-shrink:0;
       border:1px solid var(--line); background:var(--panel-2); color:var(--ink);
       font-size:18px; cursor:pointer; order:-1;
     }
-    .mobile-menu-btn:hover{ border-color:rgba(240,169,60,.5); color:var(--amber); }
+    .mobile-menu-btn:hover, .display-mode-toggle-btn:hover{ border-color:rgba(240,169,60,.5); color:var(--amber); }
+    /* โหมด "ย่อพอดีจอ": sidebar/topbar กลับไปเป็นเลย์เอาต์เดสก์ท็อปเป๊ะๆ แล้วย่อทั้ง .app-shell ด้วย transform:scale ผ่าน JS
+       ข้อเสียที่รู้อยู่แล้ว: ตัวหนังสือ/ปุ่มจะเล็กลงตามอัตราส่วนย่อ กดแม่นยำยากกว่าโหมดลิ้นชัก จึงทำเป็นโหมดเลือกเอง ไม่ใช่ค่าเริ่มต้น */
+    body.desktop-scale-mode #appShellScaleWrap{ overflow:hidden; }
+    body.desktop-scale-mode .app-shell{ transform-origin:top left; }
+    body.desktop-scale-mode .sidebar{ transform:none; }
+    body.desktop-scale-mode .sidebar.mobile-open{ transform:none; } /* ไม่มีลิ้นชักในโหมดนี้ sidebar โชว์ตลอดเหมือนเดสก์ท็อป */
+    body.desktop-scale-mode .main-wrap{ padding-left:var(--sidebar-w); }
+    body.desktop-scale-mode.sidebar-collapsed .main-wrap{ padding-left:var(--sidebar-w-collapsed); }
+    body.desktop-scale-mode .sidebar.collapsed{ width:var(--sidebar-w-collapsed); padding:20px 10px 16px; }
+    body.desktop-scale-mode .sidebar.collapsed .sidebar-brand{ justify-content:center; }
+    body.desktop-scale-mode .sidebar.collapsed .brand-title,
+    body.desktop-scale-mode .sidebar.collapsed .brand-sub,
+    body.desktop-scale-mode .sidebar.collapsed .nav-item span:not(.nav-ic),
+    body.desktop-scale-mode .sidebar.collapsed .sidebar-status,
+    body.desktop-scale-mode .sidebar.collapsed .sidebar-online,
+    body.desktop-scale-mode .sidebar.collapsed .sidebar-footer{ display:none; }
+    body.desktop-scale-mode .sidebar.collapsed .nav-item{ justify-content:center; padding:10px 0; gap:0; }
+    body.desktop-scale-mode .sidebar-toggle-btn{ display:flex; } /* คืนปุ่มพับ/ขยายแบบเดสก์ท็อป */
+    body.desktop-scale-mode .sidebar-close-btn{ display:none; }
+    body.desktop-scale-mode .mobile-menu-btn{ display:none; } /* ไม่มีลิ้นชักให้เปิดในโหมดนี้ */
+    body.desktop-scale-mode .sidebar-backdrop{ display:none !important; }
+    body.desktop-scale-mode #displayModeToggleBtn{ order:0; }
 
     .sidebar-backdrop{
       position:fixed; inset:0; background:rgba(0,0,0,.55);
@@ -2181,6 +2204,7 @@
     <span><b>บันทึกจริง</b> — ข้อมูลถูกเก็บไว้บน Supabase ทุกเครื่องที่เปิดไฟล์นี้เห็นข้อมูลชุดเดียวกัน</span>
   </div>
 
+  <div id="appShellScaleWrap">
   <div class="app-shell">
     <aside class="sidebar" id="appSidebar">
       <div class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="พับ/ขยายแถบเมนู">
@@ -2223,6 +2247,7 @@
     <div class="main-wrap">
       <div class="topbar" id="stickyToolbarWrap">
         <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileSidebar()" title="เปิดเมนู" aria-label="เปิดเมนู">☰</button>
+        <button type="button" class="display-mode-toggle-btn" id="displayModeToggleBtn" onclick="toggleDisplayMode()" title="สลับมุมมองมือถือ/เดสก์ท็อป" aria-label="สลับมุมมองมือถือ/เดสก์ท็อป">🖥️</button>
         <div class="search-wrap">
           <input id="searchBox" type="text" placeholder="ค้นหาอะไหล่ (ชื่อ, รุ่น, แบรนด์ หรือ รหัส)...">
           <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearchBox()" title="ล้างคำค้นหา">✕</button>
@@ -2376,6 +2401,7 @@
 
     </div><!-- /.main-wrap -->
   </div><!-- /.app-shell -->
+  </div><!-- /#appShellScaleWrap -->
 
   <div class="overlay" id="overlay">
     <div class="modal pv-modal" id="itemModal">
@@ -2634,6 +2660,79 @@
       if(window.innerWidth > 900) closeMobileSidebar();
     });
   })();
+
+  // ===== มือถือ: สลับโหมดการแสดงผล "ลิ้นชัก" (อ่าน/กดง่าย ค่าเริ่มต้น) ↔ "ย่อพอดีจอ" (เหมือนคอมเป๊ะ แต่ตัวเล็กลง) =====
+  // อ้างอิงความกว้างดีไซน์เดสก์ท็อป ใช้คำนวณอัตราส่วนย่อ (scale) ให้พอดีความกว้างจอจริง
+  const DESKTOP_SCALE_MIN_WIDTH = 1280;
+  let shellResizeObserver = null;
+
+  function applyDesktopScale(){
+    const wrap = document.getElementById('appShellScaleWrap');
+    const shell = document.querySelector('.app-shell');
+    if(!wrap || !shell) return;
+    const isScaleMode = document.body.classList.contains('desktop-scale-mode');
+    if(!isScaleMode || window.innerWidth > 900){
+      // ไม่ใช่โหมดย่อพอดีจอ หรือจอกว้างพอแล้ว (เดสก์ท็อปจริง) → ล้างค่า transform/ความสูงที่ตั้งไว้ทั้งหมด
+      shell.style.transform = '';
+      shell.style.width = '';
+      wrap.style.height = '';
+      return;
+    }
+    // วัดความกว้างธรรมชาติของเลย์เอาต์ก่อน (รีเซ็ต transform ชั่วคราวเพื่อไม่ให้ค่าย่อเก่ากวนการวัด)
+    shell.style.transform = 'none';
+    shell.style.width = '';
+    const naturalWidth = Math.max(shell.scrollWidth, DESKTOP_SCALE_MIN_WIDTH);
+    const scale = window.innerWidth / naturalWidth;
+    shell.style.width = naturalWidth + 'px';
+    shell.style.transform = `scale(${scale})`;
+    wrap.style.height = (shell.scrollHeight * scale) + 'px';
+  }
+
+  function attachShellResizeObserver(){
+    if(shellResizeObserver || typeof ResizeObserver === 'undefined') return;
+    const shell = document.querySelector('.app-shell');
+    if(!shell) return;
+    // เนื้อหาในหน้าโหลดเพิ่ม/เปลี่ยนความสูงบ่อย (การ์ดอะไหล่, ตาราง ฯลฯ) ต้องคำนวณความสูงกรอบ scale ใหม่ทุกครั้งที่เนื้อหาเปลี่ยน
+    shellResizeObserver = new ResizeObserver(function(){
+      const wrap = document.getElementById('appShellScaleWrap');
+      if(!wrap || !document.body.classList.contains('desktop-scale-mode') || window.innerWidth > 900) return;
+      const m = (shell.style.transform || '').match(/scale\(([\d.]+)\)/);
+      const scale = m ? parseFloat(m[1]) : 1;
+      wrap.style.height = (shell.scrollHeight * scale) + 'px';
+    });
+    shellResizeObserver.observe(shell);
+  }
+
+  function updateDisplayModeBtn(){
+    const btn = document.getElementById('displayModeToggleBtn');
+    if(!btn) return;
+    const isScale = document.body.classList.contains('desktop-scale-mode');
+    btn.textContent = isScale ? '📱' : '🖥️';
+    btn.title = isScale ? 'สลับกลับเป็นเมนูมือถือ (อ่าน/กดง่ายกว่า)' : 'สลับเป็นมุมมองเดสก์ท็อป (ย่อพอดีจอ)';
+  }
+
+  function setDisplayMode(mode){
+    document.body.classList.toggle('desktop-scale-mode', mode === 'scale');
+    try{ localStorage.setItem('mobileDisplayMode', mode); }catch(e){}
+    updateDisplayModeBtn();
+    closeMobileSidebar(); // กันลิ้นชักค้างเปิดตอนสลับโหมด
+    applyDesktopScale();
+  }
+  function toggleDisplayMode(){
+    const current = document.body.classList.contains('desktop-scale-mode') ? 'scale' : 'drawer';
+    setDisplayMode(current === 'scale' ? 'drawer' : 'scale');
+  }
+  (function initDisplayMode(){
+    let saved = 'drawer';
+    try{ saved = localStorage.getItem('mobileDisplayMode') || 'drawer'; }catch(e){}
+    document.body.classList.toggle('desktop-scale-mode', saved === 'scale');
+    updateDisplayModeBtn();
+    applyDesktopScale();
+    attachShellResizeObserver();
+  })();
+  window.addEventListener('resize', applyDesktopScale);
+  window.addEventListener('orientationchange', applyDesktopScale);
+  window.addEventListener('load', applyDesktopScale);
 
   // ดึง path ของไฟล์ใน Storage จาก public URL เพื่อใช้ลบไฟล์เก่าทิ้ง
   function storagePathFromUrl(url){
