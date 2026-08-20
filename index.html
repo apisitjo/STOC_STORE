@@ -1259,6 +1259,17 @@
 
   .pv-grid{ display:grid; grid-template-columns:290px 1fr; gap:28px; }
   @media (max-width:760px){ .pv-grid{ grid-template-columns:1fr; } }
+  @media (max-width:900px){
+    /* โหมด "ย่อพอดีจอ": ตัวโมดัลรายละเอียดสินค้าอยู่นอก #appShellScaleWrap (ไม่ถูกย่อไปพร้อม sidebar/เนื้อหาหลัก)
+       เดิมจึงยังคงกางแบบมือถือ (คอลัมน์เดียว, กว้างเท่าจอจริง) แม้ผู้ใช้จะสลับไปโหมดเดสก์ท็อปแล้ว
+       ต้องบังคับกว้าง 1000px + คอลัมน์คู่แบบเดสก์ท็อปเสมอ แล้วค่อยย่อด้วย transform:scale (คำนวณใน JS) ให้พอดีจอจริงอีกที */
+    body.desktop-scale-mode #itemModal.pv-modal{
+      width:1000px;
+      flex-shrink:0;
+      transform-origin: top center;
+    }
+    body.desktop-scale-mode .pv-grid{ grid-template-columns:290px 1fr; }
+  }
 
   .pv-mainimg-wrap{ position:relative; }
   .pv-mainimg{
@@ -2737,6 +2748,7 @@
     updateDisplayModeBtn();
     closeMobileSidebar(); // กันลิ้นชักค้างเปิดตอนสลับโหมด
     applyDesktopScale();
+    if(typeof applyModalDesktopScale === 'function') applyModalDesktopScale(); // เผื่อโมดัลรายละเอียดสินค้าเปิดค้างอยู่ตอนสลับโหมด
   }
   function toggleDisplayMode(){
     const current = document.body.classList.contains('desktop-scale-mode') ? 'scale' : 'drawer';
@@ -7020,12 +7032,42 @@
   }
   function closeModal(){ document.getElementById('overlay').classList.remove('show'); currentCode=null; }
 
+  // ===== โหมด "ย่อพอดีจอ": บังคับให้โมดัลรายละเอียดสินค้ากางแบบเดสก์ท็อป (กว้าง 1000px) เสมอ
+  // แล้วย่อด้วย transform:scale ให้พอดีความกว้างจอจริง (โมดัลนี้อยู่นอก #appShellScaleWrap เลยไม่ถูกย่อไปพร้อมกับ sidebar/เนื้อหาหลักโดยอัตโนมัติ) =====
+  function applyModalDesktopScale(){
+    const modal = document.getElementById('itemModal');
+    const overlayEl = document.getElementById('overlay');
+    if(!modal || !overlayEl) return;
+    const inDesktopScale = document.body.classList.contains('desktop-scale-mode') && window.innerWidth <= 900;
+    if(!inDesktopScale || !overlayEl.classList.contains('show')){
+      modal.style.transform = '';
+      return;
+    }
+    const naturalWidth = 1000; // ตรงกับ max-width ของ #itemModal.pv-modal ตอนกางเต็มแบบเดสก์ท็อป
+    const availableWidth = window.innerWidth - 32; // หัก padding ซ้าย/ขวาของ .overlay (16px ต่อฝั่ง)
+    const scale = Math.min(1, availableWidth / naturalWidth);
+    modal.style.transform = `scale(${scale})`;
+  }
+  (function initItemModalDesktopScale(){
+    const overlayEl = document.getElementById('overlay');
+    if(overlayEl){
+      new MutationObserver(applyModalDesktopScale).observe(overlayEl, { attributes:true, attributeFilter:['class'] });
+    }
+    window.addEventListener('resize', applyModalDesktopScale);
+    window.addEventListener('orientationchange', applyModalDesktopScale);
+  })();
+
   // ===== แคปหน้าจอหน้าต่างรายละเอียดสินค้า (เต็มความสูง ไม่ตัดส่วนที่ถูกเลื่อนพ้นจอ) =====
   async function captureModalScreenshot(){
     const modal = document.getElementById('itemModal');
     const btn = document.getElementById('modalScreenshotBtn');
     if(!modal || typeof html2canvas === 'undefined') return;
     if(btn){ btn.textContent = '⏳'; btn.style.pointerEvents = 'none'; }
+
+    // ถ้าอยู่ในโหมด "ย่อพอดีจอ" ตัวโมดัลจริงบนจอถูกย่อไว้ด้วย transform:scale (กว้างจริง 1000px แต่แสดงเล็กกว่านั้นให้พอดีจอ)
+    // ต้องแคปที่ความกว้างธรรมชาติแบบเดสก์ท็อปเสมอ ไม่ใช่ความกว้างที่ถูกย่อแล้วบนจอ ไม่งั้นจะได้ภาพเล็กจิ๋วผิดสัดส่วน
+    const isDesktopStyle = document.body.classList.contains('desktop-scale-mode') || window.innerWidth > 900;
+    const naturalDesktopWidth = 1000; // ตรงกับ max-width ของ #itemModal.pv-modal ตอนกางเต็มแบบเดสก์ท็อป
 
     // โคลนโมดัลออกมานอกกรอบ overflow เดิม เพื่อให้แคปได้เนื้อหาทั้งหมดแม้ส่วนที่ต้องเลื่อนดู
     const clone = modal.cloneNode(true);
@@ -7038,7 +7080,9 @@
     clone.style.maxHeight = 'none';
     clone.style.height = 'auto';
     clone.style.overflow = 'visible';
-    clone.style.width = modal.getBoundingClientRect().width + 'px'; // ล็อกความกว้างเท่าที่แสดงจริงบนจอ ป้องกันการเรนเดอร์แคปเพี้ยนระหว่างโคลนย้ายตำแหน่ง
+    // โหมดย่อพอดีจอ → แคปที่ 1000px (ธรรมชาติแบบเดสก์ท็อป) / โหมดมือถือปกติ → แคปเท่าที่แสดงจริงบนจอ
+    clone.style.width = (isDesktopStyle ? naturalDesktopWidth : modal.getBoundingClientRect().width) + 'px';
+    clone.style.transform = 'none'; // ล้าง transform:scale ที่อาจติดมาจากโหมดย่อพอดีจอ (cloneNode คัดลอก inline style มาด้วย) กันแคปได้ภาพเล็กผิดขนาด
     clone.style.zIndex = '-1';
     const cloneCloseBtn = clone.querySelector('.modal-close');
     if(cloneCloseBtn) cloneCloseBtn.style.visibility = 'hidden';
@@ -7068,11 +7112,11 @@
       const bg = getComputedStyle(document.documentElement).getPropertyValue('--panel').trim() || '#131b26';
       // เดิม windowWidth ถูกบังคับให้ >=1200 เสมอ ทำให้ media query มือถือ (เช่น .pv-grid พับเป็นคอลัมน์เดียวตอนจอแคบ) ไม่ทำงาน
       // ผลคือแคปจากมือถือได้ภาพที่พยายามเรนเดอร์เลย์เอาต์เดสก์ท็อป 2 คอลัมน์บีบอัดอยู่ในกรอบแคบๆ ผิดสัดส่วนไปจากที่เห็นจริงบนจอ
-      // แก้โดยอ้างอิงความกว้างจอจริงของอุปกรณ์ที่กำลังแคป (มือถือ = ความกว้างจอจริง ให้ media query มือถือทำงานตามที่เห็น, เดสก์ท็อป = คงพฤติกรรมเดิมบังคับอย่างน้อย 1200)
-      const isMobileViewport = window.innerWidth <= 900;
-      const captureWindowWidth = isMobileViewport
-        ? document.documentElement.clientWidth
-        : Math.max(document.documentElement.clientWidth, 1200);
+      // แก้โดยอ้างอิงว่ากำลังแคปแบบไหน: โหมดมือถือปกติ = ความกว้างจอจริง ให้ media query มือถือทำงานตามที่เห็น,
+      // โหมด "ย่อพอดีจอ" หรือเดสก์ท็อปจริง = บังคับอย่างน้อย 1200 ให้เลย์เอาต์เดสก์ท็อป 2 คอลัมน์เรนเดอร์เต็มที่เหมือนที่ตั้งใจให้เห็น
+      const captureWindowWidth = isDesktopStyle
+        ? Math.max(document.documentElement.clientWidth, 1200)
+        : document.documentElement.clientWidth;
       const canvas = await html2canvas(clone, { backgroundColor: bg, scale: 2, useCORS: true, windowWidth: captureWindowWidth });
       canvas.toBlob(function(blob){
         if(!blob) return;
