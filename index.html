@@ -7038,7 +7038,7 @@
     clone.style.maxHeight = 'none';
     clone.style.height = 'auto';
     clone.style.overflow = 'visible';
-    clone.style.width = modal.getBoundingClientRect().width + 'px'; // ล็อกความกว้างเท่าที่แสดงจริงบนจอ กันโดน media query มือถือ
+    clone.style.width = modal.getBoundingClientRect().width + 'px'; // ล็อกความกว้างเท่าที่แสดงจริงบนจอ ป้องกันการเรนเดอร์แคปเพี้ยนระหว่างโคลนย้ายตำแหน่ง
     clone.style.zIndex = '-1';
     const cloneCloseBtn = clone.querySelector('.modal-close');
     if(cloneCloseBtn) cloneCloseBtn.style.visibility = 'hidden';
@@ -7066,7 +7066,14 @@
 
     try{
       const bg = getComputedStyle(document.documentElement).getPropertyValue('--panel').trim() || '#131b26';
-      const canvas = await html2canvas(clone, { backgroundColor: bg, scale: 2, useCORS: true, windowWidth: Math.max(document.documentElement.clientWidth, 1200) });
+      // เดิม windowWidth ถูกบังคับให้ >=1200 เสมอ ทำให้ media query มือถือ (เช่น .pv-grid พับเป็นคอลัมน์เดียวตอนจอแคบ) ไม่ทำงาน
+      // ผลคือแคปจากมือถือได้ภาพที่พยายามเรนเดอร์เลย์เอาต์เดสก์ท็อป 2 คอลัมน์บีบอัดอยู่ในกรอบแคบๆ ผิดสัดส่วนไปจากที่เห็นจริงบนจอ
+      // แก้โดยอ้างอิงความกว้างจอจริงของอุปกรณ์ที่กำลังแคป (มือถือ = ความกว้างจอจริง ให้ media query มือถือทำงานตามที่เห็น, เดสก์ท็อป = คงพฤติกรรมเดิมบังคับอย่างน้อย 1200)
+      const isMobileViewport = window.innerWidth <= 900;
+      const captureWindowWidth = isMobileViewport
+        ? document.documentElement.clientWidth
+        : Math.max(document.documentElement.clientWidth, 1200);
+      const canvas = await html2canvas(clone, { backgroundColor: bg, scale: 2, useCORS: true, windowWidth: captureWindowWidth });
       canvas.toBlob(function(blob){
         if(!blob) return;
         const codeText = (document.getElementById('modalCode')?.textContent || '').trim();
