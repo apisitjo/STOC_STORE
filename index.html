@@ -4895,6 +4895,7 @@
     }
   }
 
+  let searchSetByScan = false; // true เมื่อช่องค้นหาถูกเติมค่าอัตโนมัติจากการสแกนบาร์โค้ด (ไม่ใช่ผู้ใช้พิมพ์เอง)
   function onScanSuccess(decodedText){
     const code = decodedText.trim();
     const match = parts.find(p => p.code.toLowerCase() === code.toLowerCase());
@@ -4906,6 +4907,7 @@
     }
     closeBarcodeScanner();
     document.getElementById('searchBox').value = match.code;
+    searchSetByScan = true; // จำไว้ว่าข้อความค้นหานี้มาจากการสแกน ไม่ใช่ผู้ใช้พิมพ์เอง
     applyFilters();
     openModal(match.code);
   }
@@ -6696,6 +6698,7 @@
 
   let searchDebounceTimer = null;
   document.getElementById('searchBox').addEventListener('input', function(){
+    searchSetByScan = false; // ผู้ใช้พิมพ์เองแล้ว ไม่ต้องล้างอัตโนมัติตอนปิดหน้าอะไหร่อีก
     document.getElementById('searchClearBtn').style.display = this.value ? 'block' : 'none';
     const kbdHint = document.getElementById('searchKbdHint');
     if(kbdHint) kbdHint.style.display = this.value ? 'none' : '';
@@ -7030,7 +7033,15 @@
     document.getElementById('itemModal').scrollTop = 0;
     requestAnimationFrame(()=>{ document.getElementById('itemModal').scrollTop = 0; });
   }
-  function closeModal(){ document.getElementById('overlay').classList.remove('show'); currentCode=null; }
+  function closeModal(){
+    document.getElementById('overlay').classList.remove('show');
+    currentCode=null;
+    // ถ้าช่องค้นหาถูกเติมอัตโนมัติจากการสแกนบาร์โค้ด ให้ล้างทิ้งตอนออกจากหน้าอะไหร่ จะได้ไม่ค้างกรองรายการไว้
+    if(searchSetByScan){
+      searchSetByScan = false;
+      clearSearchBox();
+    }
+  }
 
   // ===== โหมด "ย่อพอดีจอ": บังคับให้โมดัลรายละเอียดสินค้ากางแบบเดสก์ท็อป (กว้าง 1000px) เสมอ
   // แล้วย่อด้วย transform:scale ให้พอดีความกว้างจอจริง (โมดัลนี้อยู่นอก #appShellScaleWrap เลยไม่ถูกย่อไปพร้อมกับ sidebar/เนื้อหาหลักโดยอัตโนมัติ) =====
