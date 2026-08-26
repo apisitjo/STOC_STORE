@@ -2109,6 +2109,23 @@
     </div>
   </div>
 
+  <div class="overlay" id="userWithdrawReportOverlay">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-close"><span onclick="closeUserWithdrawReportModal()" title="ปิด">✕</span></div>
+      <h2>สรุปการเบิกรายบุคคล</h2>
+      <div class="msub">แสดงทุกคนที่เบิกไป วันนี้ / สัปดาห์นี้ / เดือนนี้ / ปีนี้ — คลิกชื่อเพื่อดูรายละเอียด</div>
+      <div class="mbtns" style="margin-top:10px;">
+        <button class="b-save" style="flex:1;" onclick="loadUserWithdrawYearData()">🔄 โหลด/รีเฟรชข้อมูล</button>
+        <button class="b-cancel" style="flex:1;" onclick="exportUserWithdrawCSV()">⬇️ ส่งออก CSV (ทั้งหมด)</button>
+      </div>
+      <div id="uwSummary" style="font-size:13px;margin-top:12px;line-height:1.7;"></div>
+      <div id="uwList" style="max-height:480px;overflow-y:auto;margin-top:8px;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" onclick="closeUserWithdrawReportModal()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay" id="zeroStockOverlay">
     <div class="modal" style="max-width:640px;">
       <div class="modal-close"><span onclick="closeZeroStockModal()" title="ปิด">✕</span></div>
@@ -2238,6 +2255,10 @@
         <button class="b-save" style="flex:1;" onclick="openPurchaseItemModal(null)">+ เพิ่มคำขอซื้อใหม่</button>
         <button class="b-cancel" style="flex:1;" onclick="loadPurchaseRequests()">🔄 รีเฟรช</button>
         <button class="b-cancel" style="flex:1;" onclick="openPurchaseSummaryModal()">📊 สรุปตามช่วงเวลา</button>
+      </div>
+      <div class="mbtns" style="margin-top:8px;">
+        <button class="b-cancel" style="flex:1;" onclick="exportPurchaseListCSV()">⬇️ ส่งออก CSV</button>
+        <button class="b-cancel" style="flex:1;" onclick="exportPurchaseListReport()">🖼️ ส่งออกรายงาน (มีรูป/PDF)</button>
       </div>
       <div class="cat-bar" id="purchaseFilterBar" style="margin-top:12px;"></div>
       <div id="purchaseListWrap" style="margin-top:10px;max-height:440px;overflow-y:auto;"></div>
@@ -2461,6 +2482,7 @@
         <a class="nav-item" onclick="openChartsModal()" title="กราฟ / สถิติ"><span class="nav-ic">📈</span><span>กราฟ / สถิติ</span></a>
         <a class="nav-item" onclick="openPurchaseListModal()" title="ขอซื้อ / เครื่องมือ"><span class="nav-ic">🛒</span><span>ขอซื้อ / เครื่องมือ</span></a>
         <a class="nav-item" onclick="openReportModal()" title="รายงานการแก้ไข"><span class="nav-ic">📊</span><span>รายงานการแก้ไข</span></a>
+        <a class="nav-item" onclick="openUserWithdrawReportModal()" title="สรุปการเบิกตามผู้ใช้"><span class="nav-ic">👥</span><span>สรุปการเบิกตามผู้ใช้</span></a>
         <a class="nav-item" onclick="openZeroStockModal()" title="อะไหล่หมดสต็อก"><span class="nav-ic">🚫</span><span>อะไหล่หมดสต็อก</span></a>
         <a class="nav-item" id="manageUsersBtn" style="display:none;" onclick="openAdminPanel()" title="จัดการผู้ใช้"><span class="nav-ic">👤</span><span>จัดการผู้ใช้</span></a>
         <a class="nav-item" id="backupDataBtn" style="display:none;" onclick="openBackupModal()" title="สำรองข้อมูล"><span class="nav-ic">💾</span><span>สำรองข้อมูล</span></a>
@@ -4167,6 +4189,216 @@
     URL.revokeObjectURL(url);
   }
 
+  // ---------- สรุปการเบิกรายบุคคล (วันนี้ / สัปดาห์นี้ / เดือนนี้ / ปีนี้) ----------
+  let uwAllYearRows = []; // แถวดิบ "เบิกอะไหล่" ทั้งหมดของปีนี้ (ดึงครั้งเดียว แล้วกรองแยกช่วง/แยกคนในฝั่ง JS)
+
+  // จุดเริ่มสัปดาห์แบบ ISO (จันทร์เป็นวันแรกของสัปดาห์)
+  function startOfIsoWeek(d){
+    const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const dow = date.getDay();
+    const isoDow = dow === 0 ? 7 : dow;
+    date.setDate(date.getDate() - isoDow + 1);
+    date.setHours(0,0,0,0);
+    return date;
+  }
+
+  function openUserWithdrawReportModal(){
+    document.getElementById('uwSummary').innerHTML = '';
+    document.getElementById('uwList').innerHTML = '';
+    document.getElementById('userWithdrawReportOverlay').classList.add('show');
+    loadUserWithdrawYearData();
+  }
+  function closeUserWithdrawReportModal(){ document.getElementById('userWithdrawReportOverlay').classList.remove('show'); }
+
+  // ดึงข้อมูล "เบิกอะไหล่" ทั้งหมดตั้งแต่ต้นปีนี้จนถึงตอนนี้มาครั้งเดียว
+  // เพราะครอบคลุมทั้ง วันนี้/สัปดาห์นี้/เดือนนี้/ปีนี้ อยู่แล้ว ไม่ต้องยิง query แยกทีละช่วง
+  async function loadUserWithdrawYearData(){
+    const summaryEl = document.getElementById('uwSummary');
+    const listEl = document.getElementById('uwList');
+    summaryEl.textContent = 'กำลังโหลดข้อมูล...';
+    listEl.innerHTML = '';
+    try{
+      const now = new Date();
+      const yearStart = new Date(now.getFullYear(), 0, 1);
+      const cacheKey = activityCacheKey('uwyear', { start: yearStart.toISOString() });
+      let rows = getCachedActivityQuery(cacheKey);
+      if(!rows){
+        rows = await fetchAllRows(() => supabaseClient
+          .from('activity_log')
+          .select('*')
+          .eq('action', 'เบิกอะไหล่')
+          .gte('created_at', yearStart.toISOString())
+          .order('created_at', { ascending: true }));
+        setCachedActivityQuery(cacheKey, rows);
+      }
+      uwAllYearRows = rows;
+      renderAllUsersWithdrawReport();
+    }catch(e){
+      console.error(e);
+      summaryEl.textContent = '⚠ โหลดข้อมูลไม่สำเร็จ';
+    }
+  }
+
+  function uwGroupItems(rows){
+    const items = {};
+    let totalQty = 0;
+    rows.forEach(r=>{
+      const itemKey = (r.part_code||'') + '|' + (r.part_name||r.part_code||'ไม่ทราบรายการ');
+      if(!items[itemKey]) items[itemKey] = { name: r.part_name||r.part_code||'ไม่ทราบรายการ', code: r.part_code||'', qty:0 };
+      const qty = Number(r.qty_delta)||0;
+      items[itemKey].qty += qty;
+      totalQty += qty;
+    });
+    return { items: Object.values(items).sort((a,b)=> b.qty - a.qty), totalQty, totalEvents: rows.length };
+  }
+
+  // scrollMax: ถ้าระบุ (เช่น '260px') และมีรายการมากกว่า ~6 ชิ้น จะทำให้รายการเลื่อนดูได้แทนที่จะยืดยาวไปเรื่อยๆ
+  // ใช้กับช่วงเดือน/ปี ที่มักมีรายการสะสมเยอะ ส่วนวันนี้/สัปดาห์นี้ไม่ค่อยยาวจึงปล่อยแสดงเต็มตามปกติ
+  function uwSectionHtml(title, rows, scrollMax){
+    const g = uwGroupItems(rows);
+    const useScroll = scrollMax && g.items.length > 6;
+    const body = !rows.length
+      ? `<div style="padding:8px 10px;color:var(--sub);font-size:12.5px;">ไม่มีการเบิกในช่วงนี้</div>`
+      : `<div style="padding:6px 10px;${useScroll ? `max-height:${scrollMax};overflow-y:auto;` : ''}">${g.items.map(it=>
+          `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--line-soft);font-size:12.5px;">
+            <span>${it.name}${it.code?(' <span style="color:#999;font-family:var(--mono);font-size:11px;">('+it.code+')</span>'):''}</span>
+            <span style="font-family:var(--mono);font-weight:600;">${it.qty.toLocaleString('th-TH')}</span>
+          </div>`
+        ).join('')}</div>`;
+    return `<div style="border:1px solid var(--line-soft);border-radius:8px;overflow:hidden;margin-bottom:6px;">
+      <div style="padding:6px 10px;font-size:12px;font-weight:700;background:var(--panel-2);display:flex;justify-content:space-between;align-items:center;">
+        <span>${title}</span>
+        <span style="font-size:11px;color:var(--steel);">รวม ${g.totalQty.toLocaleString('th-TH')} ชิ้น · ${g.totalEvents} ครั้ง${useScroll ? ' · เลื่อนดูได้' : ''}</span>
+      </div>
+      ${body}
+    </div>`;
+  }
+
+  // แสดงทุกคนที่มีการเบิกในปีนี้ เรียงคนที่เบิกเยอะสุด (รวมทั้งปี) ไว้บนสุด
+  // แต่ละคนแสดงเป็นการ์ดพับ/กาง — ยอดรวม 4 ช่วงเวลาเห็นได้ทันทีแม้ยังไม่กาง กดชื่อเพื่อดูรายละเอียดของแต่ละช่วง
+  function renderAllUsersWithdrawReport(){
+    const summaryEl = document.getElementById('uwSummary');
+    const listEl = document.getElementById('uwList');
+    if(!uwAllYearRows.length){
+      summaryEl.innerHTML = 'ยังไม่มีการเบิกอะไหล่ในปีนี้';
+      listEl.innerHTML = '';
+      return;
+    }
+
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = startOfIsoWeek(now);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const byUser = {};
+    uwAllYearRows.forEach(r=>{
+      const uName = r.display_name || r.username || 'ไม่ทราบผู้ใช้';
+      if(!byUser[uName]) byUser[uName] = [];
+      byUser[uName].push(r);
+    });
+
+    const userEntries = Object.entries(byUser).map(([uName, rows])=>{
+      const totalQtyYear = rows.reduce((s,r)=> s + (Number(r.qty_delta)||0), 0);
+      return { uName, rows, totalQtyYear };
+    }).sort((a,b)=> b.totalQtyYear - a.totalQtyYear);
+
+    const totalQtyAll = uwAllYearRows.reduce((s,r)=> s + (Number(r.qty_delta)||0), 0);
+    summaryEl.innerHTML = `รวมทั้งหมด ${totalQtyAll.toLocaleString('th-TH')} ชิ้น จาก ${userEntries.length} คน ในปี ${now.getFullYear()}`;
+
+    listEl.innerHTML = userEntries.map(({uName, rows, totalQtyYear})=>{
+      const rowsToday = rows.filter(r=> new Date(r.created_at) >= startOfDay);
+      const rowsWeek  = rows.filter(r=> new Date(r.created_at) >= startOfWeek);
+      const rowsMonth = rows.filter(r=> new Date(r.created_at) >= startOfMonth);
+      const qtyToday = rowsToday.reduce((s,r)=> s+(Number(r.qty_delta)||0),0);
+      const qtyWeek  = rowsWeek.reduce((s,r)=> s+(Number(r.qty_delta)||0),0);
+      const qtyMonth = rowsMonth.reduce((s,r)=> s+(Number(r.qty_delta)||0),0);
+
+      return `<details style="border:1.5px solid var(--line);border-left:4px solid var(--amber);border-radius:10px;overflow:hidden;margin-bottom:14px;background:var(--card);box-shadow:0 2px 8px var(--shadow-soft);">
+        <summary style="cursor:pointer;list-style:none;padding:10px 12px;background:var(--panel-2);border-bottom:1px solid var(--line-soft);">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:800;">
+            <span>👤 ${uName}</span>
+            <span style="font-size:11px;color:var(--steel);font-weight:500;">▾ ดูรายละเอียด</span>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:11.5px;color:var(--sub);font-family:var(--mono);">
+            <span>วันนี้ ${qtyToday.toLocaleString('th-TH')}</span>
+            <span>สัปดาห์นี้ ${qtyWeek.toLocaleString('th-TH')}</span>
+            <span>เดือนนี้ ${qtyMonth.toLocaleString('th-TH')}</span>
+            <span>ปีนี้ ${totalQtyYear.toLocaleString('th-TH')}</span>
+          </div>
+        </summary>
+        <div style="padding:10px 12px;">
+          ${uwSectionHtml('📅 วันนี้ (' + now.toLocaleDateString('th-TH') + ')', rowsToday)}
+          ${uwSectionHtml('🗓️ สัปดาห์นี้ (เริ่ม ' + startOfWeek.toLocaleDateString('th-TH') + ')', rowsWeek)}
+          ${uwSectionHtml('📆 เดือนนี้ (' + startOfMonth.toLocaleDateString('th-TH', {month:'long', year:'numeric'}) + ')', rowsMonth, '220px')}
+          ${uwSectionHtml('📈 ปีนี้ (' + now.getFullYear() + ')', rows, '260px')}
+        </div>
+      </details>`;
+    }).join('');
+  }
+
+  // ส่งออก CSV โดยจัดกลุ่มแยกเป็นรายบุคคล (เรียงคนเบิกเยอะสุดไว้บนสุด เหมือนที่แสดงบนหน้าจอ)
+  // ในแต่ละคนจะแบ่งย่อยเป็นรายเดือนอีกชั้น (เรียงเดือนแรก -> เดือนล่าสุด) พร้อมยอดรวมของแต่ละเดือน
+  function exportUserWithdrawCSV(){
+    if(!uwAllYearRows.length){ alert('ยังไม่มีข้อมูลให้ส่งออก'); return; }
+    const header = ['ผู้ใช้','วันที่-เวลา','รหัสอะไหล่','ชื่ออะไหล่','จำนวนที่เบิก'];
+    const csvRows = [];
+
+    const byUser = {};
+    uwAllYearRows.forEach(r=>{
+      const uName = r.display_name || r.username || 'ไม่ทราบผู้ใช้';
+      if(!byUser[uName]) byUser[uName] = [];
+      byUser[uName].push(r);
+    });
+    const userEntries = Object.entries(byUser).map(([uName, rows])=>{
+      const totalQty = rows.reduce((s,r)=> s + (Number(r.qty_delta)||0), 0);
+      return { uName, rows, totalQty };
+    }).sort((a,b)=> b.totalQty - a.totalQty);
+
+    const csvEsc = v => `"${String(v).replace(/"/g,'""')}"`;
+
+    userEntries.forEach(({uName, rows, totalQty}, uIdx)=>{
+      if(uIdx > 0) csvRows.push(''); // บรรทัดว่างคั่นระหว่างคน
+      csvRows.push(csvEsc(`👤 ${uName} — รวม ${totalQty.toLocaleString('th-TH')} ชิ้น (${rows.length} รายการ)`));
+
+      // จัดกลุ่มรายการของคนนี้ตามเดือน (เรียงเดือนแรกสุดของปีไปหาเดือนล่าสุด)
+      const byMonth = {};
+      rows.forEach(r=>{
+        const d = new Date(r.created_at);
+        const mKey = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+        if(!byMonth[mKey]) byMonth[mKey] = [];
+        byMonth[mKey].push(r);
+      });
+      const monthKeys = Object.keys(byMonth).sort();
+
+      monthKeys.forEach(mKey=>{
+        const monthRows = byMonth[mKey];
+        const monthQty = monthRows.reduce((s,r)=> s + (Number(r.qty_delta)||0), 0);
+        const [y, m] = mKey.split('-').map(Number);
+        const monthLabel = new Date(y, m-1, 1).toLocaleDateString('th-TH', {month:'long', year:'numeric'});
+        csvRows.push(csvEsc(`  📆 ${monthLabel} — รวม ${monthQty.toLocaleString('th-TH')} ชิ้น (${monthRows.length} รายการ)`));
+        csvRows.push(header.map(csvEsc).join(','));
+        monthRows.forEach(r=>{
+          const t = new Date(r.created_at).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'});
+          const vals = [uName, t, r.part_code||'', r.part_name||'', Number(r.qty_delta)||0];
+          csvRows.push(vals.map(csvEsc).join(','));
+        });
+        csvRows.push(''); // บรรทัดว่างคั่นระหว่างเดือน
+      });
+      csvRows.pop(); // ตัดบรรทัดว่างท้ายสุดของเดือนสุดท้ายออก กันว่างซ้อนกับตัวคั่นคนถัดไป
+    });
+
+    const csvContent = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `สรุปการเบิกรายบุคคล-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // ---------- สรุปอะไหล่หมดสต็อก ----------
   let lastZeroStockRows = [];
 
@@ -5788,11 +6020,96 @@
     if(p.purchased) return 'purchased';
     return 'pending';
   }
-  function purchaseStatusBadge(p){
+  function purchaseStatusLabel(p){
     const s = purchaseStatusOf(p);
-    if(s==='received') return `<span class="badge arrived">รับของแล้ว</span>`;
-    if(s==='purchased') return `<span class="badge po">ซื้อแล้ว รอรับของ</span>`;
-    return `<span class="badge pr">รอดำเนินการ</span>`;
+    if(s==='received') return 'รับของแล้ว';
+    if(s==='purchased') return 'ซื้อแล้ว รอรับของ';
+    return 'รอดำเนินการ';
+  }
+
+  // ส่งออกรายการคำขอซื้อ (ตามตัวกรองที่แสดงอยู่บนหน้าจอ) เป็น CSV — ไม่มีรูปภาพ แต่แนบเป็นลิงก์ URL ให้กดเปิดดูได้
+  function exportPurchaseListCSV(){
+    let list = purchaseRequests;
+    if(purchaseFilter !== 'all'){
+      list = list.filter(p => purchaseStatusOf(p) === purchaseFilter);
+    }
+    if(!list.length){ alert('ไม่มีรายการให้ส่งออก'); return; }
+    const header = ['ชื่ออะไหล่/เครื่องมือ','อาการชำรุด/เหตุผล','สถานะ','ผู้ขอ','วันที่ขอ','ซื้อแล้วโดย','วันที่ซื้อ','รับของแล้วโดย','วันที่รับของ','ลิงก์สั่งซื้อ','ลิงก์รูปอะไหล่ชำรุด','ลิงก์รูปอะไหล่ใหม่'];
+    const csvEsc = v => `"${String(v||'').replace(/"/g,'""')}"`;
+    const csvRows = [header.map(csvEsc).join(',')];
+    list.forEach(p=>{
+      const t = p.createdAt ? new Date(p.createdAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '';
+      const purchasedT = p.purchasedAt ? new Date(p.purchasedAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '';
+      const receivedT = p.receivedAt ? new Date(p.receivedAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '';
+      const vals = [p.itemName, p.damageDescription, purchaseStatusLabel(p), p.requestedByDisplay, t, p.purchasedBy, purchasedT, p.receivedBy, receivedT, p.purchaseLink, p.damagedImageUrl, p.newItemImageUrl];
+      csvRows.push(vals.map(csvEsc).join(','));
+    });
+    const csvContent = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `คำขอซื้อ-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ส่งออกรายงานแบบมีรูปภาพ — เปิดแท็บใหม่เป็นหน้าสำหรับพิมพ์ แล้วให้ผู้ใช้กด "บันทึกเป็น PDF" จากหน้าต่างพิมพ์ของเบราว์เซอร์
+  // (ทำแบบนี้เพราะ CSV ใส่รูปภาพจริงไม่ได้ แต่หน้าเว็บพิมพ์เป็น PDF ใส่รูปได้)
+  function exportPurchaseListReport(){
+    let list = purchaseRequests;
+    if(purchaseFilter !== 'all'){
+      list = list.filter(p => purchaseStatusOf(p) === purchaseFilter);
+    }
+    if(!list.length){ alert('ไม่มีรายการให้ส่งออก'); return; }
+
+    const cardsHtml = list.map((p, idx)=>{
+      const t = p.createdAt ? new Date(p.createdAt).toLocaleString('th-TH',{dateStyle:'long', timeStyle:'short'}) : '-';
+      const imgHtml = (url, label) => url
+        ? `<div style="flex:1;"><div style="font-size:11px;color:#666;margin-bottom:4px;">${label}</div><img src="${url}" style="width:100%;max-height:220px;object-fit:contain;border:1px solid #ddd;border-radius:6px;background:#f7f7f7;"></div>`
+        : `<div style="flex:1;"><div style="font-size:11px;color:#666;margin-bottom:4px;">${label}</div><div style="width:100%;height:120px;border:1px dashed #ccc;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:12px;">ไม่มีรูป</div></div>`;
+      return `<div style="page-break-inside:avoid;border:1px solid #ccc;border-radius:8px;padding:14px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:15px;font-weight:700;">${idx+1}. ${p.itemName||'-'}</div>
+            <div style="font-size:11.5px;color:#666;">ขอโดย ${p.requestedByDisplay||'-'} · ${t}</div>
+          </div>
+          <div style="font-size:11.5px;font-weight:700;border:1px solid #999;border-radius:12px;padding:3px 10px;white-space:nowrap;">${purchaseStatusLabel(p)}</div>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:8px;">
+          ${imgHtml(p.damagedImageUrl, 'ภาพอะไหล่ที่ชำรุด')}
+          ${imgHtml(p.newItemImageUrl, 'ภาพอะไหล่ใหม่ที่ต้องการซื้อ')}
+        </div>
+        <div style="font-size:12.5px;line-height:1.6;">
+          ${p.damageDescription ? `<div><b>อาการชำรุด/เหตุผล:</b> ${p.damageDescription}</div>` : ''}
+          ${p.purchaseLink ? `<div><b>ลิงก์สั่งซื้อ:</b> ${p.purchaseLink}</div>` : ''}
+          ${p.purchased ? `<div><b>ซื้อแล้วโดย:</b> ${p.purchasedBy||'-'} (${p.purchasedAt ? new Date(p.purchasedAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '-'})</div>` : ''}
+          ${p.received ? `<div><b>รับของแล้วโดย:</b> ${p.receivedBy||'-'} (${p.receivedAt ? new Date(p.receivedAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '-'})</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    const filterLabel = purchaseFilter==='all' ? 'ทั้งหมด' : purchaseFilter==='pending' ? 'รอดำเนินการ' : purchaseFilter==='purchased' ? 'ซื้อแล้ว รอรับของ' : 'รับของแล้ว';
+    const printWin = window.open('', '_blank');
+    if(!printWin){ alert('เบราว์เซอร์บล็อกการเปิดหน้าต่างใหม่ กรุณาอนุญาต popup แล้วลองอีกครั้ง'); return; }
+    printWin.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">
+      <title>รายงานคำขอซื้อ (${filterLabel})</title>
+      <style>
+        body{ font-family:'Segoe UI', 'IBM Plex Sans', sans-serif; color:#111; padding:24px; max-width:800px; margin:0 auto; }
+        h1{ font-size:19px; margin-bottom:2px; }
+        .meta{ font-size:12px; color:#666; margin-bottom:18px; }
+        @media print{ body{ padding:0; } }
+      </style>
+      </head><body>
+      <h1>🛒 รายงานคำขอซื้อเครื่องมือ/อะไหล่</h1>
+      <div class="meta">ตัวกรอง: ${filterLabel} · รวม ${list.length} รายการ · พิมพ์เมื่อ ${new Date().toLocaleString('th-TH',{dateStyle:'long', timeStyle:'short'})}</div>
+      ${cardsHtml}
+      </body></html>`);
+    printWin.document.close();
+    // รอให้รูปภาพโหลดครบก่อนค่อยเปิดหน้าต่างพิมพ์ ไม่งั้นรูปอาจหายในไฟล์ PDF ที่ได้
+    printWin.onload = () => { setTimeout(() => printWin.print(), 400); };
   }
 
   function openPurchaseListModal(){
