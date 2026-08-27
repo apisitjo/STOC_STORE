@@ -6026,6 +6026,11 @@
     if(s==='purchased') return 'ซื้อแล้ว รอรับของ';
     return 'รอดำเนินการ';
   }
+  function purchaseStatusBadge(p){
+    const s = purchaseStatusOf(p);
+    const color = s==='received' ? 'var(--green)' : (s==='purchased' ? 'var(--blue)' : 'var(--amber)');
+    return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;background:${color};color:#0b1017;">${purchaseStatusLabel(p)}</span>`;
+  }
 
   // ส่งออกรายการคำขอซื้อ (ตามตัวกรองที่แสดงอยู่บนหน้าจอ) เป็น CSV — ไม่มีรูปภาพ แต่แนบเป็นลิงก์ URL ให้กดเปิดดูได้
   function exportPurchaseListCSV(){
