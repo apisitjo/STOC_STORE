@@ -1457,12 +1457,14 @@
     display:none; align-items:center; gap:5px; font-size:12px; color:#9db2da; cursor:pointer; margin-top:9px;
   }
   .pv-editing .pv-upload-label.pv-upload-label-desktop{ display:inline-flex; }
+  .pv-editing .pv-upload-label.pv-upload-label-webcam{ display:inline-flex; }
   /* บนมือถือ input accept="image/*" ธรรมดาจะเปิด picker กลางๆ ของ OS (กล้อง/คลังปนกัน) ไม่ชัดเจนว่ากดแล้วจะได้อะไร
      เลยแยกเป็น 2 ปุ่มชัดเจนแทน: "ถ่ายภาพ" (บังคับเปิดกล้องตรงด้วย capture="environment") กับ "เลือกจากคลัง" (เปิดคลังรูปตรงๆ) */
   .pv-upload-label.pv-upload-label-camera,
   .pv-upload-label.pv-upload-label-gallery{ display:none; }
   @media (max-width:900px){
     .pv-editing .pv-upload-label.pv-upload-label-desktop{ display:none; }
+    .pv-editing .pv-upload-label.pv-upload-label-webcam{ display:none; }
     .pv-editing .pv-upload-label.pv-upload-label-camera,
     .pv-editing .pv-upload-label.pv-upload-label-gallery{ display:inline-flex; flex:1; justify-content:center; }
   }
@@ -2356,8 +2358,23 @@
   </div>
 
   <div class="overlay" id="imageLightbox" onclick="closeImageLightbox()" style="z-index:50;background:rgba(10,14,18,.88);cursor:zoom-out;">
-    <img id="lightboxImg" src="" style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.5);">
+    <div id="lightboxZoomWrap" style="width:92vw;height:92vh;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;">
+      <img id="lightboxImg" src="" draggable="false"
+        onclick="event.stopPropagation()"
+        onwheel="lbOnWheel(event)"
+        ondblclick="lbOnDblClick(event)"
+        onpointerdown="lbOnPointerDown(event)"
+        onpointermove="lbOnPointerMove(event)"
+        onpointerup="lbOnPointerUp(event)"
+        onpointercancel="lbOnPointerUp(event)"
+        style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.5);touch-action:none;user-select:none;transform-origin:center center;">
+    </div>
     <span onclick="closeImageLightbox()" style="position:fixed;top:16px;right:22px;color:#fff;font-size:30px;font-weight:300;cursor:pointer;line-height:1;">✕</span>
+    <div onclick="event.stopPropagation()" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2;">
+      <button onclick="lightboxZoomBy(-0.5)" style="width:38px;height:38px;border-radius:50%;border:1px solid rgba(139,92,246,.55);background:rgba(10,14,24,.78);color:#e2d9ff;font-size:18px;font-weight:700;cursor:pointer;">−</button>
+      <button onclick="lightboxZoomReset()" style="padding:0 14px;height:38px;border-radius:19px;border:1px solid rgba(139,92,246,.55);background:rgba(10,14,24,.78);color:#e2d9ff;font-size:12px;font-weight:600;cursor:pointer;">รีเซ็ตซูม</button>
+      <button onclick="lightboxZoomBy(0.5)" style="width:38px;height:38px;border-radius:50%;border:1px solid rgba(139,92,246,.55);background:rgba(10,14,24,.78);color:#e2d9ff;font-size:18px;font-weight:700;cursor:pointer;">+</button>
+    </div>
   </div>
 
   <div class="overlay" id="barcodeLightbox" style="z-index:50;background:rgba(10,14,18,.88);" onclick="closeBarcodeLightbox()">
@@ -2417,6 +2434,22 @@
 
       <div class="mbtns">
         <button class="b-cancel" onclick="closeChartsModal()">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="cameraCaptureOverlay" style="z-index:50;">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-close"><span onclick="closeCameraCapture()" title="ปิด">✕</span></div>
+      <h2>📸 ถ่ายภาพ</h2>
+      <div class="msub">เล็งกล้องแล้วกด "ถ่ายภาพ" ด้านล่าง</div>
+      <div style="width:100%;margin-top:10px;border-radius:10px;overflow:hidden;background:#000;position:relative;">
+        <video id="cameraVideoPreview" autoplay playsinline muted style="width:100%;display:block;max-height:60vh;object-fit:contain;background:#000;"></video>
+      </div>
+      <div id="cameraCaptureMsg" style="font-size:13px;margin-top:10px;min-height:18px;"></div>
+      <div class="mbtns">
+        <button class="b-cancel" style="flex:1;" onclick="closeCameraCapture()">ยกเลิก</button>
+        <button class="b-save" style="flex:1;" onclick="capturePhotoFromCamera()">📸 ถ่ายภาพ</button>
       </div>
     </div>
   </div>
@@ -2689,9 +2722,12 @@
           </div>
           <div class="pv-upload-actions">
             <label class="pv-upload-label pv-upload-label-desktop">
-              📷 เปลี่ยน/เพิ่มรูปภาพ
+              🖼️ เปลี่ยน/เพิ่มรูปภาพ
               <input type="file" id="mImageFile" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
             </label>
+            <div class="pv-upload-label pv-upload-label-webcam" onclick="openCameraCapture()" style="cursor:pointer;">
+              🎥 ถ่ายภาพ (เว็บแคม)
+            </div>
             <label class="pv-upload-label pv-upload-label-camera">
               📷 ถ่ายภาพ
               <input type="file" id="mImageFileCamera" accept="image/*" capture="environment" style="display:none;" onchange="handleImageSelect(event)">
@@ -5896,6 +5932,13 @@
   async function handleImageSelect(evt){
     const file = evt.target.files[0];
     if(!file) return;
+    const ok = await processSelectedImageFile(file);
+    if(!ok) evt.target.value = '';
+  }
+
+  // ใช้ร่วมกันทั้งจาก input เลือกไฟล์ (handleImageSelect) และจากกล้องเว็บแคมในตัว (capturePhotoFromCamera)
+  // คืนค่า true ถ้าประมวลผลไฟล์สำเร็จ, false ถ้าล้มเหลว (อ่านไฟล์ไม่ได้/แปลงไม่ได้)
+  async function processSelectedImageFile(file){
     const msg = document.getElementById('modalMsg');
     let readableFile;
     try{
@@ -5906,8 +5949,7 @@
       readableFile = await ensureBrowserReadableImage(file);
     }catch(e){
       if(msg){ msg.textContent = e.message; msg.className = 'err'; }
-      evt.target.value = '';
-      return;
+      return false;
     }
     if(msg && msg.className !== 'err'){ msg.textContent = ''; }
     pendingImageFile = readableFile;
@@ -5917,6 +5959,147 @@
       document.getElementById('modalThumb').innerHTML = `<img src="${pendingImageDataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
     };
     reader.readAsDataURL(readableFile);
+    return true;
+  }
+
+  // ---------- ถ่ายภาพด้วยเว็บแคม (สำหรับเดสก์ท็อป ที่ปุ่ม "ถ่ายภาพ" แบบ capture=environment ของมือถือใช้ไม่ได้) ----------
+  let cameraStream = null;
+  async function openCameraCapture(){
+    const msgEl = document.getElementById('cameraCaptureMsg');
+    if(msgEl){ msgEl.textContent = ''; msgEl.style.color = ''; }
+    document.getElementById('cameraCaptureOverlay').classList.add('show');
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      if(msgEl){ msgEl.textContent = '⚠ เบราว์เซอร์นี้ไม่รองรับการเข้าถึงกล้อง'; msgEl.style.color = '#c0392b'; }
+      return;
+    }
+    try{
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    }catch(e1){
+      try{
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }catch(e2){
+        console.error('เปิดกล้องไม่สำเร็จ', e2);
+        if(msgEl){ msgEl.textContent = '⚠ เปิดกล้องไม่สำเร็จ ตรวจสอบสิทธิ์การเข้าถึงกล้องของเบราว์เซอร์'; msgEl.style.color = '#c0392b'; }
+        return;
+      }
+    }
+    const video = document.getElementById('cameraVideoPreview');
+    if(video) video.srcObject = cameraStream;
+  }
+  function closeCameraCapture(){
+    document.getElementById('cameraCaptureOverlay').classList.remove('show');
+    if(cameraStream){
+      cameraStream.getTracks().forEach(t=>t.stop());
+      cameraStream = null;
+    }
+    const video = document.getElementById('cameraVideoPreview');
+    if(video) video.srcObject = null;
+  }
+  async function capturePhotoFromCamera(){
+    const video = document.getElementById('cameraVideoPreview');
+    const msgEl = document.getElementById('cameraCaptureMsg');
+    if(!video || !video.videoWidth){
+      if(msgEl){ msgEl.textContent = '⚠ กล้องยังไม่พร้อม รอสักครู่แล้วลองใหม่'; msgEl.style.color = '#c0392b'; }
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.toBlob(async blob=>{
+      if(!blob){
+        if(msgEl){ msgEl.textContent = '⚠ ถ่ายภาพไม่สำเร็จ ลองใหม่อีกครั้ง'; msgEl.style.color = '#c0392b'; }
+        return;
+      }
+      const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      await processSelectedImageFile(file);
+      closeCameraCapture();
+    }, 'image/jpeg', 0.9);
+  }
+
+  // ---------- ซูมเข้า/ออกรูปภาพในหน้าต่างขยาย (lightbox): scroll wheel, ดับเบิลคลิก, ลากด้วยเมาส์/นิ้ว, บีบนิ้วซูม (pinch) ----------
+  let lbScale = 1, lbTx = 0, lbTy = 0;
+  let lbPointers = new Map();
+  let lbPinchStartDist = 0, lbPinchStartScale = 1;
+  let lbDragging = false, lbDragStart = {x:0,y:0}, lbStartTx = 0, lbStartTy = 0;
+  let lbMoved = false;
+  const LB_MAX_SCALE = 4, LB_MIN_SCALE = 1;
+
+  function lbApplyTransform(){
+    const img = document.getElementById('lightboxImg');
+    if(!img) return;
+    img.style.transform = `translate(${lbTx}px, ${lbTy}px) scale(${lbScale})`;
+    img.style.cursor = lbScale > 1 ? 'grab' : 'zoom-in';
+  }
+  function lbResetZoom(){
+    lbScale = 1; lbTx = 0; lbTy = 0;
+    lbPointers.clear();
+    lbPinchStartDist = 0;
+    lbDragging = false;
+    lbApplyTransform();
+  }
+  function lightboxZoomReset(){ lbResetZoom(); }
+  function lightboxZoomBy(delta){
+    lbScale = Math.min(LB_MAX_SCALE, Math.max(LB_MIN_SCALE, lbScale + delta));
+    if(lbScale <= LB_MIN_SCALE){ lbTx = 0; lbTy = 0; }
+    lbApplyTransform();
+  }
+  function lbOnWheel(e){
+    e.preventDefault();
+    lightboxZoomBy(e.deltaY < 0 ? 0.35 : -0.35);
+  }
+  function lbOnDblClick(e){
+    e.stopPropagation();
+    if(lbScale > LB_MIN_SCALE){ lbResetZoom(); }
+    else { lbScale = 2.5; lbApplyTransform(); }
+  }
+  function lbOnPointerDown(e){
+    e.stopPropagation();
+    const img = document.getElementById('lightboxImg');
+    try{ img.setPointerCapture(e.pointerId); }catch(err){}
+    lbPointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    lbMoved = false;
+    if(lbPointers.size === 1){
+      lbDragging = true;
+      lbDragStart = {x:e.clientX, y:e.clientY};
+      lbStartTx = lbTx; lbStartTy = lbTy;
+    } else if(lbPointers.size === 2){
+      lbDragging = false;
+      const pts = [...lbPointers.values()];
+      lbPinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      lbPinchStartScale = lbScale;
+    }
+  }
+  function lbOnPointerMove(e){
+    if(!lbPointers.has(e.pointerId)) return;
+    lbPointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(lbPointers.size === 2){
+      const pts = [...lbPointers.values()];
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      if(lbPinchStartDist > 0){
+        lbScale = Math.min(LB_MAX_SCALE, Math.max(LB_MIN_SCALE, lbPinchStartScale * (dist / lbPinchStartDist)));
+        lbApplyTransform();
+        lbMoved = true;
+      }
+    } else if(lbDragging){
+      const dx = e.clientX - lbDragStart.x;
+      const dy = e.clientY - lbDragStart.y;
+      if(Math.abs(dx) > 3 || Math.abs(dy) > 3) lbMoved = true;
+      if(lbScale > LB_MIN_SCALE){
+        lbTx = lbStartTx + dx;
+        lbTy = lbStartTy + dy;
+        lbApplyTransform();
+      }
+    }
+  }
+  function lbOnPointerUp(e){
+    lbPointers.delete(e.pointerId);
+    if(lbPointers.size < 2) lbPinchStartDist = 0;
+    if(lbPointers.size === 0) lbDragging = false;
+    if(!lbMoved && lbScale <= LB_MIN_SCALE + 0.02){
+      closeImageLightbox();
+    }
+    lbMoved = false;
   }
 
   // ย่อขนาดรูปก่อนอัปโหลด (กว้าง/สูงไม่เกิน 1000px, JPEG คุณภาพ 80%) เพื่อประหยัดพื้นที่เก็บข้อมูลฟรี
@@ -6264,6 +6447,7 @@
     const img = document.getElementById(thumbId).querySelector('img');
     if(!img) return; // ยังไม่มีรูปจริง
     document.getElementById('lightboxImg').src = img.src;
+    lbResetZoom();
     document.getElementById('imageLightbox').classList.add('show');
   }
 
@@ -7977,10 +8161,12 @@
     const img = thumbEl.querySelector('img');
     if(!img) return; // ยังไม่มีรูปจริง (แสดงไอคอนเริ่มต้นอยู่) ไม่ต้องขยาย
     document.getElementById('lightboxImg').src = img.src;
+    lbResetZoom();
     document.getElementById('imageLightbox').classList.add('show');
   }
   function closeImageLightbox(){
     document.getElementById('imageLightbox').classList.remove('show');
+    lbResetZoom();
   }
 
   async function deletePart(){
