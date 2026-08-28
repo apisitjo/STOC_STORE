@@ -1227,6 +1227,10 @@
   .qr-basket-warn{ font-size:11.5px; color:var(--red); }
   .qr-basket-empty{ font-size:12.5px; color:var(--sub); text-align:center; padding:14px 0; }
 
+  /* แถบแจ้งเตือนสถานะออฟไลน์ (ลอยด้านบนสุด ทับทุกอย่างรวมถึง modal) */
+  body.app-offline{ padding-top:36px; }
+  #offlineBanner{ transition:opacity .15s ease; }
+
 
   /* modal */
   .overlay{
@@ -1936,6 +1940,8 @@
 </style>
 </head>
 <body>
+
+  <div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;padding:9px 14px;text-align:center;font-size:12.5px;font-weight:600;color:#fff;background:linear-gradient(140deg, var(--red), #a83a34);box-shadow:0 2px 12px rgba(0,0,0,.35);"></div>
 
 
   <div class="overlay show" id="loginOverlay">
@@ -3069,7 +3075,63 @@
     }
   }
 
+  // ===== สถานะการเชื่อมต่ออินเทอร์เน็ต (ออนไลน์/ออฟไลน์) =====
+  // ตอนออฟไลน์: ยังดูรายการอะไหล่ (จากข้อมูลที่แคชไว้ล่าสุดใน localStorage) ได้ปกติ
+  // แต่บล็อกการแก้ไข/เบิก/บันทึกทุกจุดที่ต้องเขียนขึ้น Supabase ไว้ก่อน กันข้อมูลหายเงียบๆ
+  let isOnline = navigator.onLine;
+  const PARTS_CACHE_KEY = 'stockcheck_parts_cache_v1';
+
+  function saveOfflineCache(){
+    try{
+      localStorage.setItem(PARTS_CACHE_KEY, JSON.stringify({ parts: parts, savedAt: Date.now() }));
+    }catch(e){ /* localStorage เต็มหรือถูกปิด (โหมด private ฯลฯ) ไม่ใช่เรื่องคอขาด ปล่อยผ่านได้ */ }
+  }
+  function loadOfflineCache(){
+    try{
+      const raw = localStorage.getItem(PARTS_CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+
+  function updateOfflineBanner(){
+    const banner = document.getElementById('offlineBanner');
+    document.body.classList.toggle('app-offline', !isOnline);
+    if(!banner) return;
+    if(!isOnline){
+      const cache = loadOfflineCache();
+      const cacheTime = (cache && cache.savedAt) ? new Date(cache.savedAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : null;
+      banner.textContent = '🔴 ออฟไลน์ — ดูข้อมูลอะไหล่ได้ แต่แก้ไข/เบิก/บันทึกไม่ได้จนกว่าจะกลับมาออนไลน์' + (cacheTime ? ` (ข้อมูลล่าสุดที่แสดงอยู่ ณ ${cacheTime})` : '');
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  // เรียกใช้ที่ต้นฟังก์ชันที่ "เขียน" ข้อมูลขึ้น Supabase ทุกจุด — ถ้าออฟไลน์อยู่ ให้หยุดทันทีก่อนแตะข้อมูลใดๆ
+  // msgEl: element ที่จะโชว์ข้อความ error (ถ้าไม่ส่งมาจะ alert() แทน)
+  function blockIfOffline(msgEl){
+    if(isOnline) return false;
+    const text = '⚠ ไม่มีการเชื่อมต่ออินเทอร์เน็ต — ตอนนี้ดูข้อมูลได้อย่างเดียว แก้ไข/บันทึกไม่ได้ กรุณาต่ออินเทอร์เน็ตแล้วลองใหม่';
+    if(msgEl){ msgEl.textContent = text; msgEl.className = 'err'; }
+    else { alert(text); }
+    return true;
+  }
+
+  window.addEventListener('online', function(){
+    isOnline = true;
+    updateOfflineBanner();
+    // กลับมาออนไลน์แล้ว รีเฟรชข้อมูลอัตโนมัติให้ตรงกับฐานข้อมูลจริง เผื่อมีการแก้ไขจากเครื่องอื่นระหว่างที่ออฟไลน์อยู่
+    if(typeof currentUser !== 'undefined' && currentUser && typeof reloadFromStorage === 'function'){
+      reloadFromStorage();
+    }
+  });
+  window.addEventListener('offline', function(){
+    isOnline = false;
+    updateOfflineBanner();
+  });
+
   window.addEventListener('DOMContentLoaded', async () => {
+    updateOfflineBanner();
     if(libraryLoadError){
       const msg = document.getElementById('loginMsg');
       if(msg){
@@ -3263,6 +3325,7 @@
       alert('กรุณาเลือกไฟล์รูปภาพ');
       return;
     }
+    if(blockIfOffline()) return;
     const avatarEl = document.getElementById('userAvatar');
     if(avatarEl) avatarEl.classList.add('avatar-uploading');
     try{
@@ -3851,6 +3914,7 @@
     const typeLabel = cleanupPreviewType === 'activity_log' ? 'บันทึกประวัติแก้ไข/เบิก-เติม' : 'คำขอซื้อที่รับของแล้ว';
     const confirmed = confirm(`ยืนยันลบ ${typeLabel} จำนวน ${cleanupPreviewCount} รายการ ที่เก่ากว่า ${new Date(cleanupPreviewCutoffIso).toLocaleDateString('th-TH')} ?\n\nการลบนี้ถาวร ไม่สามารถกู้คืนได้`);
     if(!confirmed) return;
+    if(blockIfOffline()) return;
     const previewEl = document.getElementById('cleanupPreview');
     previewEl.textContent = 'กำลังลบ...';
     previewEl.style.color = 'var(--sub)';
@@ -3922,6 +3986,7 @@
     const msg = document.getElementById('roleMsg_' + username);
     if(!sel) return;
     const newRole = sel.value;
+    if(!isOnline){ if(msg){ msg.textContent = '🔴 ออฟไลน์ — บันทึกไม่ได้'; msg.style.color = '#c0392b'; } return; }
     if(msg){ msg.textContent = 'กำลังบันทึก...'; msg.style.color = '#888'; }
     try{
       const { data, error } = await supabaseClient.rpc('update_app_user_role', {
@@ -3951,6 +4016,7 @@
     const trimmed = newUsername.trim();
     if(!trimmed){ if(msg){ msg.textContent = 'กรุณาใส่ชื่อผู้ใช้'; msg.style.color = '#c0392b'; } return; }
     if(trimmed === username) return;
+    if(!isOnline){ if(msg){ msg.textContent = '🔴 ออฟไลน์ — บันทึกไม่ได้'; msg.style.color = '#c0392b'; } return; }
     if(msg){ msg.textContent = 'กำลังบันทึก...'; msg.style.color = '#888'; }
     try{
       const { data, error } = await supabaseClient.rpc('update_app_user_username', {
@@ -3980,6 +4046,7 @@
     const newPassword = prompt('รหัสผ่านใหม่สำหรับ "' + username + '":');
     if(newPassword === null) return; // ยกเลิก
     if(!newPassword){ if(msg){ msg.textContent = 'กรุณาใส่รหัสผ่าน'; msg.style.color = '#c0392b'; } return; }
+    if(!isOnline){ if(msg){ msg.textContent = '🔴 ออฟไลน์ — บันทึกไม่ได้'; msg.style.color = '#c0392b'; } return; }
     if(msg){ msg.textContent = 'กำลังบันทึก...'; msg.style.color = '#888'; }
     try{
       const { data, error } = await supabaseClient.rpc('update_app_user_password', {
@@ -4005,6 +4072,7 @@
   async function deleteUser(username){
     if(!confirm('ยืนยันลบผู้ใช้ "' + username + '"? การกระทำนี้ไม่สามารถย้อนกลับได้')) return;
     const msg = document.getElementById('roleMsg_' + username);
+    if(!isOnline){ if(msg){ msg.textContent = '🔴 ออฟไลน์ — ลบไม่ได้'; msg.style.color = '#c0392b'; } return; }
     if(msg){ msg.textContent = 'กำลังลบ...'; msg.style.color = '#888'; }
     try{
       const { data, error } = await supabaseClient.rpc('delete_app_user', {
@@ -4035,6 +4103,7 @@
     const role = document.getElementById('newUserRole').value;
     const msg = document.getElementById('adminMsg');
     if(!username || !displayName || !password){ msg.textContent = 'กรุณากรอกข้อมูลให้ครบ'; msg.style.color = '#c0392b'; return; }
+    if(!isOnline){ msg.textContent = '🔴 ออฟไลน์ — สร้างผู้ใช้ไม่ได้'; msg.style.color = '#c0392b'; return; }
     msg.textContent = 'กำลังสร้างผู้ใช้...'; msg.style.color = '#888';
     try{
       const { data, error } = await supabaseClient.rpc('create_app_user', {
@@ -5066,6 +5135,7 @@
     if(!restoreParsedData) return;
     const typed = (document.getElementById('restoreConfirmText').value || '').trim();
     if(typed !== 'กู้คืน') return;
+    if(blockIfOffline(document.getElementById('restoreMsg'))) return;
 
     const btn = document.getElementById('restoreRunBtn');
     const msg = document.getElementById('restoreMsg');
@@ -5814,6 +5884,7 @@
     if(!qrBasket.length || !currentUser) return;
     const confirmBtn = document.getElementById('qrBasketConfirmBtn');
     const msgEl = document.getElementById('qrWithdrawMsg');
+    if(blockIfOffline(msgEl)) return;
     if(confirmBtn){ confirmBtn.disabled = true; confirmBtn.textContent = 'กำลังบันทึก…'; }
 
     const updatedBy = currentUser.displayName;
@@ -6473,6 +6544,7 @@
 
     const isNew = (currentPurchaseId === null);
     const p = isNew ? null : purchaseRequests.find(x=>x.id===currentPurchaseId);
+    if(blockIfOffline(msg)) return;
 
     msg.textContent = 'กำลังบันทึก...';
     msg.className = '';
@@ -6562,6 +6634,7 @@
     if(!p) return;
     if(!confirm(`ยืนยันลบคำขอซื้อ "${p.itemName}"? การกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
     const msg = document.getElementById('purchaseModalMsg');
+    if(blockIfOffline(msg)) return;
     msg.textContent = 'กำลังลบ...';
     msg.className = '';
     try{
@@ -6720,6 +6793,7 @@
     const newName = el ? el.value.trim() : '';
     renamingCategory = null;
     if(!newName || newName===oldName){ renderCategories(); return; }
+    if(blockIfOffline()) return;
     const affectedCount = parts.filter(p=>p.category===oldName).length;
     parts.forEach(p=>{ if(p.category===oldName) p.category = newName; });
     if(activeCategory===oldName) activeCategory = newName;
@@ -6735,6 +6809,7 @@
     const affected = parts.filter(p=>p.location===activeRoom && p.category===name);
     if(!affected.length){ renderCategories(); return; }
     if(!confirm(`ยืนยันลบหมวดหมู่ "${name}"? อะไหล่ในหมวดนี้ทั้งหมด ${affected.length} รายการ (ห้อง ${activeRoom}) จะถูกลบไปด้วย และไม่สามารถย้อนกลับได้`)) return;
+    if(blockIfOffline()) return;
     try{
       const codes = affected.map(p=>p.code);
       const { error } = await supabaseClient.rpc('delete_parts', {
@@ -7132,6 +7207,7 @@
     if(!p) return;
     const newStatus = selectEl.value;
     if(newStatus === (p.status || 'ยังไม่ขอซื้อ')) return;
+    if(!isOnline){ selectEl.value = p.status || 'ยังไม่ขอซื้อ'; blockIfOffline(); return; } // ออฟไลน์ — คืนค่าเดิม ไม่แก้ในหน่วยความจำก่อนเช็ค
     const prevStatus = p.status || 'ยังไม่ขอซื้อ';
     const needsPo = newStatus.indexOf('PR')!==-1 || newStatus.indexOf('PO')!==-1;
     if(!needsPo) p.poNumber = ''; // เปลี่ยนกลับเป็นสถานะที่ไม่ต้องมีเลข PO แล้ว ล้างทิ้งกันข้อมูลค้าง
@@ -7155,6 +7231,7 @@
     if(!p) return;
     const val = inputEl.value.trim();
     if(val === (p.poNumber || '')) return;
+    if(!isOnline){ inputEl.value = p.poNumber || ''; blockIfOffline(); return; }
 
     const now = new Date();
     p.poNumber = val;
@@ -8175,6 +8252,7 @@
     if(!p) return;
     if(!confirm(`ยืนยันลบ "${p.name}" (${p.code})? การกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
     const msg = document.getElementById('modalMsg');
+    if(blockIfOffline(msg)) return;
     msg.textContent = 'กำลังลบ...';
     msg.className = '';
     try{
@@ -8329,6 +8407,7 @@
     const poNumber = needsPo ? document.getElementById('mPoNumber').value.trim() : '';
     const updatedBy = currentUser ? currentUser.displayName : 'ไม่ทราบผู้ใช้';
     const msg = document.getElementById('modalMsg');
+    if(blockIfOffline(msg)) return;
 
     const name = document.getElementById('mName').value.trim();
     if(!name){ msg.textContent='กรุณาใส่ชื่ออะไหล่'; msg.className='err'; return; }
@@ -8502,6 +8581,7 @@
   // ส่ง rowsToPersist เป็น array ของ part object ที่ต้องการอัปเดต — ถ้าไม่ส่งจะ fallback ไปอัปเดตทั้งหมด (ใช้เฉพาะกรณีจำเป็นจริงๆ)
   async function persistParts(rowsToPersist, opts){
     const statusEl = document.getElementById('syncStatus');
+    if(!isOnline){ if(statusEl) statusEl.textContent = '🔴 ออฟไลน์ — ยังไม่ได้บันทึก'; return; }
     const rows = rowsToPersist || parts;
     if(!rows.length) return;
     const excludeQty = opts && opts.excludeQty; // true เมื่อ qty ถูกอัปเดตแบบ atomic แยกไปแล้วผ่าน adjustPartQty()
@@ -8527,6 +8607,7 @@
   // ปรับยอดคงเหลือแบบ atomic ที่ฐานข้อมูลโดยตรง (บวก/ลบจากค่าจริงล่าสุดใน DB ไม่ใช่ค่าที่ค้างอยู่ในเครื่อง)
   // ป้องกัน sync conflict เวลามีคนแก้ยอดชิ้นเดียวกันพร้อมกันจากคนละเครื่อง
   async function adjustPartQty(code, delta, updatedAtStr, updatedByStr){
+    if(!isOnline){ throw new Error('ออฟไลน์อยู่ — ไม่สามารถบันทึกได้ในตอนนี้'); }
     const trimmedCode = (code || '').trim();
     if(trimmedCode !== code){
       // เจอกรณีค่า code มีช่องว่าง/อักขระแฝงติดมาก่อนส่งไป RPC — log ไว้ช่วยยืนยันต้นตอของปัญหา "ไม่พบรหัสอะไหล่ในระบบ"
@@ -8569,6 +8650,7 @@
       const { data, error } = await supabaseClient.from('parts').select('*').order('code');
       if(error) throw error;
       parts = (data || []).map(fromDbRow);
+      saveOfflineCache();
       await cleanupStalePoNumbers();
       renderRoomTabs();
       renderCategories();
@@ -8578,7 +8660,7 @@
       if(statusEl) statusEl.textContent = 'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
     }catch(e){
       console.error('โหลดข้อมูลไม่สำเร็จ', e);
-      if(statusEl) statusEl.textContent = '⚠ โหลดข้อมูลไม่สำเร็จ';
+      if(statusEl) statusEl.textContent = isOnline ? '⚠ โหลดข้อมูลไม่สำเร็จ' : '🔴 ออฟไลน์ — แสดงข้อมูลที่บันทึกไว้ล่าสุด';
     }
   }
 
@@ -8615,6 +8697,7 @@
       if(error) throw error;
       if(data && data.length){
         parts = data.map(fromDbRow);
+        saveOfflineCache();
         await cleanupStalePoNumbers();
       } else {
         // ตารางว่าง (ครั้งแรก) — เติมข้อมูลตัวอย่างตั้งต้นลงฐานข้อมูล
@@ -8624,11 +8707,20 @@
           p_rows: parts.map(toDbRow)
         });
         if(seedErr) throw seedErr;
+        saveOfflineCache();
       }
       if(statusEl) statusEl.textContent = 'เชื่อมต่อฐานข้อมูลสำเร็จ · ' + new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
     }catch(e){
-      console.error('เชื่อมต่อฐานข้อมูลไม่สำเร็จ ใช้ข้อมูลตัวอย่างแบบไม่บันทึกแทน', e);
-      if(statusEl) statusEl.textContent = '⚠ เชื่อมต่อ Supabase ไม่สำเร็จ ตรวจสอบตาราง/policy';
+      console.error('เชื่อมต่อฐานข้อมูลไม่สำเร็จ', e);
+      // เชื่อมต่อไม่ได้ (เช่นเปิดแอปตอนออฟไลน์) — ลองใช้ข้อมูลที่แคชไว้ในเครื่องล่าสุดแทน ดีกว่าโชว์ข้อมูลตัวอย่างเปล่าๆ
+      const cache = loadOfflineCache();
+      if(cache && Array.isArray(cache.parts) && cache.parts.length){
+        parts = cache.parts;
+        const cacheTime = cache.savedAt ? new Date(cache.savedAt).toLocaleString('th-TH',{dateStyle:'short', timeStyle:'short'}) : '';
+        if(statusEl) statusEl.textContent = '🔴 ออฟไลน์ — แสดงข้อมูลที่บันทึกไว้ล่าสุด' + (cacheTime ? ` (${cacheTime})` : '');
+      } else {
+        if(statusEl) statusEl.textContent = '⚠ เชื่อมต่อ Supabase ไม่สำเร็จ ตรวจสอบตาราง/policy';
+      }
     }
     renderRoomTabs();
     renderCategories();
