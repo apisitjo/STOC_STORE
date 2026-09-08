@@ -917,6 +917,7 @@
   .stock-table .st-code:hover{ background:rgba(240,169,60,.22); border-color:rgba(240,169,60,.7); }
   .stock-table .st-name{ font-weight:600; }
   .stock-table .st-sub{ color:var(--sub); font-size:12px; }
+  .stock-table .st-price{ text-align:right; font-family:var(--mono); font-weight:700; white-space:nowrap; }
   .stock-table .st-num{ text-align:center; font-family:var(--mono); }
   .stock-table .st-qty-input{
     width:72px; text-align:center; font-family:var(--mono); font-weight:700;
@@ -1536,14 +1537,18 @@
   .pv-row3{ display:flex; gap:10px; }
   .pv-row3 > div{ flex:1; min-width:0; }
 
-  .pv-barcode-row{ display:flex; flex-direction:row; flex-wrap:nowrap; gap:12px; align-items:stretch; }
-  .pv-barcode-row .code-input-col{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; }
-  .pv-barcode-row .barcode-frame{ flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center; }
-  .pv-barcode-row .barcode-box{ width:100%; min-height:58px; padding:6px; }
-  .pv-barcode-row .barcode-box svg{ max-width:100%; width:auto; margin:0 auto; }
+  .code-price-barcode-row{ display:flex; flex-direction:row; flex-wrap:nowrap; gap:12px; align-items:stretch; }
+  .code-price-fields{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:14px; }
+  .code-price-field{ flex:0 0 auto; min-width:0; width:100%; }
+  .code-price-field label{ display:block; font-size:12px; font-weight:600; margin:0 0 6px; color:#9fb3d8; }
+  .code-price-field input{ width:100%; }
+  .code-price-barcode-row .barcode-frame{ flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center; }
+  .code-price-barcode-row .barcode-box{ width:100%; min-height:58px; padding:6px; }
+  .code-price-barcode-row .barcode-box svg{ max-width:100%; width:auto; margin:0 auto; }
   @media (max-width:560px){
-    .pv-barcode-row{ flex-direction:column; flex-wrap:wrap; }
-    .pv-barcode-row .code-input-col, .pv-barcode-row .barcode-frame{ flex:1 1 auto; }
+    .code-price-barcode-row{ flex-direction:column; flex-wrap:wrap; }
+    .code-price-fields{ flex:1 1 auto; }
+    .code-price-barcode-row .barcode-frame{ flex:1 1 auto; }
   }
 
   .pv-current-box{
@@ -2677,6 +2682,7 @@
             <th class="sortable" onclick="sortTableBy('code')">รหัส <span class="sort-arrow" id="sortArrow-code"></span></th>
             <th class="sortable" onclick="sortTableBy('name')">ชื่ออะไหล่ <span class="sort-arrow" id="sortArrow-name"></span></th>
             <th class="sortable" onclick="sortTableBy('modelBrand')">รุ่น / แบรนด์ <span class="sort-arrow" id="sortArrow-modelBrand"></span></th>
+            <th class="sortable" onclick="sortTableBy('price')">ราคา (บาท) <span class="sort-arrow" id="sortArrow-price"></span></th>
             <th class="sortable" onclick="sortTableBy('min')">Min – Max <span class="sort-arrow" id="sortArrow-min"></span></th>
             <th class="sortable" onclick="sortTableBy('qty')">คงเหลือ <span class="sort-arrow" id="sortArrow-qty"></span></th>
             <th class="sortable" onclick="sortTableBy('status')">สถานะการขอซื้อ <span class="sort-arrow" id="sortArrow-status"></span></th>
@@ -2803,12 +2809,18 @@
           <label>แบรนด์</label>
           <input type="text" id="mBrand" placeholder="เช่น SMC, Omron" disabled>
 
-          <label>รหัสสินค้า</label>
-          <div class="code-row pv-barcode-row">
-            <div class="code-input-col">
-              <input type="text" id="mCode" placeholder="เช่น SOL-024-A" oninput="renderBarcode(); checkCodeDuplicate();" disabled>
-              <div id="codeLockNote" style="font-size:11px;color:#c0392b;margin-top:3px;display:none;">🔒 แก้ไขรหัสสินค้าได้เฉพาะผู้ดูแลระบบ</div>
-              <div id="codeDupNote" style="font-size:11px;color:#c0392b;margin-top:3px;display:none;">⚠ รหัสนี้ถูกใช้กับอะไหล่ชิ้นอื่นแล้ว</div>
+          <div class="code-price-barcode-row">
+            <div class="code-price-fields">
+              <div class="code-price-field">
+                <label>รหัสสินค้า</label>
+                <input type="text" id="mCode" placeholder="เช่น SOL-024-A" oninput="renderBarcode(); checkCodeDuplicate();" disabled>
+                <div id="codeLockNote" style="font-size:11px;color:#c0392b;margin-top:3px;display:none;">🔒 แก้ไขรหัสสินค้าได้เฉพาะผู้ดูแลระบบ</div>
+                <div id="codeDupNote" style="font-size:11px;color:#c0392b;margin-top:3px;display:none;">⚠ รหัสนี้ถูกใช้กับอะไหล่ชิ้นอื่นแล้ว</div>
+              </div>
+              <div class="code-price-field">
+                <label>ราคา (บาท)</label>
+                <input type="number" id="mPrice" min="0" step="0.01" placeholder="เช่น 1250" disabled>
+              </div>
             </div>
             <div class="barcode-frame" onclick="openBarcodeLightbox()" style="cursor:zoom-in;">
               <span class="bcf-corner tl"></span><span class="bcf-corner tr"></span>
@@ -5939,7 +5951,7 @@
       code: (p.code || '').trim(), category: p.category, name: p.name, model: p.model, brand: p.brand, unit: p.unit,
       min: p.min, max: p.max, qty: p.qty, status: p.status,
       po_number: p.poNumber, location: p.location, storage_spot: p.storageSpot,
-      width: p.width, length: p.length, height: p.height,
+      price: p.price, width: p.width, length: p.length, height: p.height,
       image_url: p.imageUrl, thumb_url: p.thumbUrl, updated_at: p.updatedAt, updated_by: p.updatedBy
     };
   }
@@ -5950,7 +5962,7 @@
       code: (r.code || '').trim(), category: r.category, name: r.name, model: r.model, brand: r.brand, unit: r.unit,
       min: r.min, max: r.max, qty: r.qty, status: r.status,
       poNumber: r.po_number, location: r.location, storageSpot: r.storage_spot,
-      width: r.width, length: r.length, height: r.height,
+      price: r.price, width: r.width, length: r.length, height: r.height,
       imageUrl: r.image_url, thumbUrl: r.thumb_url, updatedAt: r.updated_at, updatedBy: r.updated_by
     };
   }
@@ -6955,8 +6967,8 @@
     let cmp;
     if(key === 'code'){
       cmp = codeCollator.compare(a.code, b.code);
-    } else if(key === 'min' || key === 'qty'){
-      cmp = (a[key] || 0) - (b[key] || 0);
+    } else if(key === 'min' || key === 'qty' || key === 'price'){
+      cmp = (Number(a[key]) || 0) - (Number(b[key]) || 0);
     } else if(key === 'modelBrand'){
       const av = [a.model, a.brand].filter(Boolean).join(' ');
       const bv = [b.model, b.brand].filter(Boolean).join(' ');
@@ -6968,7 +6980,7 @@
   }
 
   function updateSortArrows(){
-    ['code','name','modelBrand','min','qty','status'].forEach(k=>{
+    ['code','name','modelBrand','price','min','qty','status'].forEach(k=>{
       const el = document.getElementById('sortArrow-' + k);
       if(!el) return;
       el.textContent = (k === tableSortKey) ? (tableSortDir === 'asc' ? '▲' : '▼') : '';
@@ -7053,6 +7065,7 @@
             </div>
           </td>
           <td class="st-sub" data-label="รุ่น / แบรนด์">${modelBrand}</td>
+          <td class="st-price" data-label="ราคา (บาท)">${p.price===null || p.price===undefined || p.price==='' ? '—' : Number(p.price).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
           <td class="st-num" data-label="Min – Max">${p.min} – ${(p.max===null||p.max===undefined) ? 'ไม่จำกัด' : p.max}</td>
           <td class="st-num" data-label="คงเหลือ">
             <div class="td-value">
@@ -7257,9 +7270,10 @@
     const sorted = parts
       .filter(p=>p.location===activeRoom)
       .sort((a,b)=>codeCollator.compare(a.code, b.code));
-    const headers = ['รหัส','ชื่ออะไหล่','หมวดหมู่','รุ่น','แบรนด์','Min','Max','คงเหลือ','หน่วย','ห้อง','สถานะการขอซื้อ','เลขที่ PR/PO','แก้ไขล่าสุด','แก้ไขโดย'];
+    const headers = ['รหัส','ชื่ออะไหล่','หมวดหมู่','รุ่น','แบรนด์','ราคา (บาท)','Min','Max','คงเหลือ','หน่วย','ห้อง','สถานะการขอซื้อ','เลขที่ PR/PO','แก้ไขล่าสุด','แก้ไขโดย'];
     const rows = sorted.map(p => [
       p.code, p.name, p.category, p.model || '', p.brand || '',
+      (p.price===null||p.price===undefined||p.price==='') ? '' : Number(p.price).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}),
       p.min, (p.max===null||p.max===undefined) ? 'ไม่จำกัด' : p.max, p.qty, p.unit || '', p.location || '',
       p.status || '', p.poNumber || '',
       p.updatedAt || '', p.updatedBy || ''
@@ -7963,7 +7977,7 @@
 
   // ===== โหมดดู/แก้ไข ของหน้าต่างรายละเอียดสินค้า (pv = product view) =====
   let pvEditing = false;
-  const PV_EDIT_FIELD_IDS = ['mName','mModel','mBrand','mCode','mCategory','mLocation','mStorageSpot','mWidth','mLength','mHeight','mMin','mMax','mQty','mWithdrawQty','mStatus','mPoNumber'];
+  const PV_EDIT_FIELD_IDS = ['mName','mModel','mBrand','mCode','mCategory','mLocation','mStorageSpot','mPrice','mWidth','mLength','mHeight','mMin','mMax','mQty','mWithdrawQty','mStatus','mPoNumber'];
 
   function pvSetEditing(on){
     pvEditing = on;
@@ -8016,6 +8030,7 @@
     populateCategoryDatalist(presetCat);
     document.getElementById('mLocation').value = activeRoom;
     document.getElementById('mStorageSpot').value = '';
+    document.getElementById('mPrice').value = '';
     document.getElementById('mWidth').value = '';
     document.getElementById('mLength').value = '';
     document.getElementById('mHeight').value = '';
@@ -8059,6 +8074,7 @@
     document.getElementById('mModel').value = p.model || '';
     document.getElementById('mBrand').value = p.brand || '';
     document.getElementById('mCode').value = p.code;
+    document.getElementById('mPrice').value = (p.price ?? '');
     populateCategoryDatalist(p.category);
     document.getElementById('mLocation').value = p.location;
     document.getElementById('mStorageSpot').value = p.storageSpot || '';
@@ -8474,9 +8490,11 @@
     const widthVal = document.getElementById('mWidth').value;
     const lengthVal = document.getElementById('mLength').value;
     const heightVal = document.getElementById('mHeight').value;
+    const priceVal = document.getElementById('mPrice').value;
     const width = widthVal === '' ? null : Number(widthVal);
     const length = lengthVal === '' ? null : Number(lengthVal);
     const height = heightVal === '' ? null : Number(heightVal);
+    const price = priceVal === '' ? null : Number(priceVal);
     const prevQty = isNew ? null : p.qty;
     const oldCode = isNew ? null : p.code;
     const now = new Date();
@@ -8490,7 +8508,7 @@
         imageUrl: uploadedImage ? uploadedImage.imageUrl : null,
         thumbUrl: uploadedImage ? uploadedImage.thumbUrl : null,
         location:location, storageSpot:storageSpot,
-        width:width, length:length, height:height
+        price:price, width:width, length:length, height:height
       };
       parts.push(newPart);
       msg.textContent = 'เพิ่มอะไหล่สำเร็จ';
@@ -8516,6 +8534,7 @@
     p.max = max;
     p.location = location;
     p.storageSpot = storageSpot;
+    p.price = price;
     p.width = width;
     p.length = length;
     p.height = height;
