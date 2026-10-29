@@ -2531,6 +2531,7 @@
         <a class="nav-item" id="manageUsersBtn" style="display:none;" onclick="openAdminPanel()" title="จัดการผู้ใช้"><span class="nav-ic">👤</span><span>จัดการผู้ใช้</span></a>
         <a class="nav-item" id="backupDataBtn" style="display:none;" onclick="openBackupModal()" title="สำรองข้อมูล"><span class="nav-ic">💾</span><span>สำรองข้อมูล</span></a>
         <a class="nav-item" id="restoreDataBtn" style="display:none;" onclick="openRestoreModal()" title="กู้คืนข้อมูล"><span class="nav-ic">♻️</span><span>กู้คืนข้อมูล</span></a>
+        <a class="nav-item" id="telegramSummaryBtn" style="display:none;" onclick="sendLowStockSummaryToTelegram()" title="ส่งสรุปต่ำกว่า Min เข้า Telegram"><span class="nav-ic">✈️</span><span>ส่งสรุปเข้า Telegram</span></a>
         <div class="nav-divider"></div>
         <a class="nav-item" onclick="doLogout()" title="ออกจากระบบ"><span class="nav-ic">🚪</span><span>ออกจากระบบ</span></a>
       </nav>
@@ -2919,6 +2920,97 @@
   const SUPABASE_URL = 'https://igkqkovgxnywmfidnndk.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlna3Frb3ZneG55d21maWRubmRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NTU3NjQsImV4cCI6MjEwMTMzMTc2NH0.RTRWVFdpNAuANzMtA6APhD1fOlUZrFAnLGTgqRq2Zn4';
 
+  // ===== แจ้งเตือน Telegram: อะไหล่ต่ำกว่า Min / หมดสต็อก =====
+  // ใส่ค่าสองตัวนี้ ถ้าเว้นว่างไว้ ระบบจะข้ามการแจ้งเตือนโดยไม่กระทบการทำงานอื่น
+  //   TELEGRAM_BOT_TOKEN : token จาก @BotFather
+  //   TELEGRAM_CHAT_ID   : id ของแชท/กลุ่มที่จะรับข้อความ (กลุ่มจะขึ้นต้นด้วย -100...)
+  // ⚠ ไฟล์นี้เปิดดูโค้ดได้จากเบราว์เซอร์ ใครที่เข้าถึงไฟล์ได้ก็เห็น token — ใช้กับแอปภายในเท่านั้น
+  const TELEGRAM_BOT_TOKEN = '';
+  const TELEGRAM_CHAT_ID   = '';
+
+  function telegramEnabled(){ return !!(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID); }
+
+  async function sendTelegram(text){
+    if(!telegramEnabled()) return { ok:false, reason:'ยังไม่ได้ตั้งค่า TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID' };
+    try{
+      const res = await fetch('https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text, parse_mode: 'HTML', disable_web_page_preview: true })
+      });
+      const data = await res.json().catch(()=>null);
+      if(!res.ok || !data || !data.ok){
+        const reason = (data && data.description) ? data.description : ('HTTP ' + res.status);
+        console.warn('[Telegram] ส่งไม่สำเร็จ:', reason);
+        return { ok:false, reason: reason };
+      }
+      return { ok:true };
+    }catch(e){
+      console.warn('[Telegram] ส่งไม่สำเร็จ:', e);
+      return { ok:false, reason: (e && e.message) ? e.message : 'เชื่อมต่อไม่ได้' };
+    }
+  }
+
+  function tgEsc(v){
+    return String(v == null ? '' : v).replace(/[&<>]/g, function(ch){ return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[ch]; });
+  }
+
+  // เรียกหลังปรับยอดสำเร็จ: แจ้งเฉพาะ "จังหวะที่ข้ามเส้น" (เดิมไม่ต่ำกว่า Min → ตอนนี้ต่ำกว่า, หรือเดิมมีของ → ตอนนี้หมด)
+  // ใช้ค่า qty ที่ DB คำนวณให้ (atomic) จึงไม่แจ้งซ้ำแม้มีหลายเครื่องใช้พร้อมกัน
+  function notifyLowStockIfCrossed(part, delta){
+    try{
+      if(!telegramEnabled() || !part || !(delta < 0)) return;
+      const min = Number(part.min), now = Number(part.qty);
+      if(!isFinite(min) || !isFinite(now)) return;
+      const prev = now - delta;
+      const crossedMin  = prev >= min && now < min;
+      const crossedZero = prev > 0 && now <= 0;
+      if(!crossedMin && !crossedZero) return;
+      const out = now <= 0;
+      const lines = [
+        out ? '🚫 <b>อะไหล่หมดสต็อก</b>' : '⚠️ <b>อะไหล่ต่ำกว่า Min</b>',
+        '',
+        '<b>' + tgEsc(part.name) + '</b>',
+        'รหัส: <code>' + tgEsc(part.code) + '</code>',
+        'คงเหลือ: <b>' + now + '</b> ' + tgEsc(part.unit || '') + ' (Min ' + min + ')',
+      ];
+      const where = [part.location, part.storageSpot].filter(Boolean).join(' / ');
+      if(where) lines.push('ที่เก็บ: ' + tgEsc(where));
+      if(part.status) lines.push('สถานะ: ' + tgEsc(part.status) + (part.poNumber ? ' (' + tgEsc(part.poNumber) + ')' : ''));
+      if(part.updatedBy) lines.push('เบิกโดย: ' + tgEsc(part.updatedBy));
+      sendTelegram(lines.join('\n')); // ไม่ await — ห้ามให้การแจ้งเตือนทำให้การเบิกช้าหรือพัง
+    }catch(e){ console.warn('[Telegram] notify error', e); }
+  }
+
+  // สรุปรายการที่ต่ำกว่า Min ทั้งหมดส่งเข้า Telegram (กดจากเมนู) — แบ่งข้อความอัตโนมัติถ้ายาวเกินลิมิต 4096 ตัวอักษร
+  async function sendLowStockSummaryToTelegram(){
+    if(!telegramEnabled()){ alert('ยังไม่ได้ตั้งค่า TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID ในไฟล์'); return; }
+    const low = (parts || []).filter(function(p){ return Number(p.qty) < Number(p.min); })
+      .sort(function(a,b){ return String(a.location||'').localeCompare(String(b.location||'')) || String(a.code).localeCompare(String(b.code)); });
+    if(!confirm(low.length ? ('ส่งสรุปอะไหล่ต่ำกว่า Min จำนวน ' + low.length + ' รายการ เข้า Telegram?') : 'ตอนนี้ไม่มีรายการต่ำกว่า Min — ส่งข้อความแจ้งว่าปกติเข้า Telegram ไหม?')) return;
+    if(!low.length){
+      const r = await sendTelegram('✅ ตอนนี้ไม่มีอะไหล่ต่ำกว่า Min');
+      alert(r.ok ? 'ส่งแล้ว' : ('ส่งไม่สำเร็จ: ' + r.reason));
+      return;
+    }
+    const header = '📋 <b>สรุปอะไหล่ต่ำกว่า Min (' + low.length + ' รายการ)</b>\n';
+    const chunks = []; let cur = header;
+    low.forEach(function(p){
+      const line = '\n• <code>' + tgEsc(p.code) + '</code> ' + tgEsc(p.name) +
+        '\n   เหลือ <b>' + p.qty + '</b>/' + p.min + ' ' + tgEsc(p.unit || '') +
+        (p.location ? ' · ' + tgEsc(p.location) : '') +
+        (p.status && p.status !== 'ยังไม่ขอซื้อ' ? ' · ' + tgEsc(p.status) : '') + '\n';
+      if((cur + line).length > 3800){ chunks.push(cur); cur = ''; }
+      cur += line;
+    });
+    if(cur.trim()) chunks.push(cur);
+    for(let i = 0; i < chunks.length; i++){
+      const r = await sendTelegram(chunks[i]);
+      if(!r.ok){ alert('ส่งไม่สำเร็จ: ' + r.reason); return; }
+    }
+    alert('ส่งสรุปเข้า Telegram แล้ว (' + chunks.length + ' ข้อความ)');
+  }
+
   // ป้องกันหน้าเว็บ "ค้าง" แบบไม่มีข้อความ ถ้าโหลดไลบรารีจาก CDN ไม่สำเร็จ
   // (พบบ่อยบนแท็บเล็ต/เน็ตช้า/เน็ตที่บล็อก CDN) — ถ้าไม่มีบรรทัดนี้ ทั้งสคริปต์ทั้งไฟล์
   // จะพังเงียบๆ ตั้งแต่บรรทัดถัดไป และปุ่ม "เข้าสู่ระบบ" จะกดไม่ได้ผลอะไรเลย
@@ -3244,6 +3336,7 @@
     document.getElementById('manageUsersBtn').style.display = currentUser.role==='admin' ? 'inline-block' : 'none';
     document.getElementById('backupDataBtn').style.display = currentUser.role==='admin' ? 'inline-block' : 'none';
     document.getElementById('restoreDataBtn').style.display = currentUser.role==='admin' ? 'inline-block' : 'none';
+    document.getElementById('telegramSummaryBtn').style.display = (currentUser.role==='admin' && telegramEnabled()) ? 'inline-block' : 'none';
     loadUserAvatar();
     lastActivitySavedAt = Date.now();
     saveSession(currentUser);
@@ -8641,7 +8734,9 @@
     if(error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
     if(!row) throw new Error('ไม่พบแถวที่อัปเดต');
-    return fromDbRow(row);
+    const updated = fromDbRow(row);
+    notifyLowStockIfCrossed(updated, delta); // แจ้ง Telegram เมื่อยอดเพิ่งตกต่ำกว่า Min / หมด
+    return updated;
   }
 
   // ล้างข้อมูลเลข PO ที่ค้างอยู่จากบั๊กเดิม (สถานะไม่ใช่ PR/PO แต่ยังมีเลข PO ติดอยู่)
