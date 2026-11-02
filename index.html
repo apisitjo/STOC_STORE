@@ -8882,7 +8882,7 @@
   });
 </script>
 
-<!-- ===== รีเฟรชข้อมูลอัตโนมัติตอนสลับกลับมาเปิดแอป + ดึงหน้าจอลงเพื่อรีเฟรช (มือถือ/แท็บเล็ต) ===== -->
+<!-- ===== รีเฟรชข้อมูลอัตโนมัติตอนสลับกลับมาเปิดแอป + ดึงหน้าจอลงเพื่อโหลดใหม่ทั้งหมด (แบบ Ctrl+Shift+R) ===== -->
 <style>
   /* ปิดการดึงลงรีเฟรชแบบเดิมของเบราว์เซอร์ เพื่อไม่ให้ซ้อนกับของแอป */
   html{ overscroll-behavior-y:contain; }
@@ -8937,7 +8937,41 @@
     if(e.persisted) autoRefreshOnReturn();   // กลับมาจาก back/forward cache
   });
 
-  // ---------- 2) ดึงหน้าจอลงเพื่อรีเฟรช ----------
+  // ---------- 2) โหลดใหม่ทั้งหมดแบบ Ctrl+Shift+R (ข้ามแคชและ Service Worker) ----------
+  // ลบ Service Worker + แคชของแอปทั้งหมด แล้วโหลดหน้าใหม่จากเซิร์ฟเวอร์ด้วยลิงก์ที่ไม่ซ้ำเดิม
+  // (ถ้าออฟไลน์จะไม่ทำ เพราะการล้างแคชตอนไม่มีเน็ตจะทำให้เปิดแอปไม่ได้)
+  async function hardReload(){
+    if(busy) return 'busy';
+    if(navigator.onLine === false || (typeof isOnline !== 'undefined' && !isOnline)) return 'offline';
+    busy = true;
+    try{
+      if('serviceWorker' in navigator){
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function(r){ return r.unregister(); }));
+      }
+      if(window.caches){
+        var keys = await caches.keys();
+        await Promise.all(keys.map(function(k){ return caches.delete(k); }));
+      }
+    }catch(e){ console.warn('clear cache failed', e); }
+    try{
+      var u = new URL(location.href);
+      u.searchParams.set('_hr', String(Date.now()));
+      location.replace(u.toString());
+    }catch(e){ location.reload(); }
+    return 'reloading';
+  }
+  window.qwHardReload = hardReload;
+  // หลังโหลดใหม่เสร็จ เอาพารามิเตอร์ _hr ออกจากแถบที่อยู่ให้ลิงก์สะอาดเหมือนเดิม
+  try{
+    if(location.search.indexOf('_hr=') > -1){
+      var cu = new URL(location.href);
+      cu.searchParams.delete('_hr');
+      history.replaceState(null, '', cu.pathname + cu.search + cu.hash);
+    }
+  }catch(e){}
+
+  // ---------- 3) ดึงหน้าจอลงเพื่อรีเฟรช (ทำงานแบบ Ctrl+Shift+R) ----------
   var startY = 0, dy = 0, pulling = false;
 
   function setPtr(text, y, show){
@@ -8973,10 +9007,12 @@
     if(!pulling) return;
     pulling = false;
     if(dy >= THRESHOLD){
-      setPtr('🔄 กำลังรีเฟรช...', 30, true);
-      var ok = await doRefresh();
-      setPtr(ok ? '✅ อัปเดตแล้ว' : '⚠ รีเฟรชไม่ได้ตอนนี้', 30, true);
-      setTimeout(hidePtr, 900);
+      setPtr('🔄 กำลังโหลดใหม่ทั้งหมด...', 30, true);
+      var r = await hardReload();
+      if(r !== 'reloading'){
+        setPtr(r === 'offline' ? '📴 ออฟไลน์ รีเฟรชไม่ได้' : '⚠ รีเฟรชไม่ได้ตอนนี้', 30, true);
+        setTimeout(hidePtr, 1200);
+      }
     } else {
       hidePtr();
     }
